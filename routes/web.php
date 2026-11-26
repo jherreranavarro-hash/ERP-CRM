@@ -345,6 +345,72 @@ Route::middleware('auth')->group(function () {
         Route::post('prestamos/{prestamo}/rechazar', [RRHH\PrestamosController::class, 'rechazar'])->middleware($p('gestion-de-prestamos', 'aprobar'))->name('prestamos.rechazar');
     });
 
+    // VentasCRM → contact center
+    Route::prefix('ventas')->name('ventas.')->group(function () {
+        $p = fn (string $sub, string $accion) => "permiso:ventascrm.{$sub}.{$accion}";
+        Route::get('agentes', [\App\Http\Controllers\ContactCenter\AgentesController::class, 'index'])->middleware($p('agente', 'ver'))->name('agentes');
+        Route::post('agentes', [\App\Http\Controllers\ContactCenter\AgentesController::class, 'store'])->middleware($p('agente', 'crear'))->name('agentes.store');
+        Route::put('agentes/{agente}', [\App\Http\Controllers\ContactCenter\AgentesController::class, 'update'])->middleware($p('agente', 'editar'))->name('agentes.update');
+
+        Route::get('consola', [\App\Http\Controllers\ContactCenter\ConsolaController::class, 'show'])->middleware($p('agente', 'ver'))->name('consola');
+        Route::post('consola/estado', [\App\Http\Controllers\ContactCenter\ConsolaController::class, 'estado'])->middleware($p('agente', 'ver'))->name('consola.estado');
+        Route::post('consola/llamar/{lead}', [\App\Http\Controllers\ContactCenter\ConsolaController::class, 'llamar'])->middleware([$p('agente', 'ver'), 'throttle:30,1'])->name('consola.llamar');
+        Route::post('llamadas/{llamada}/colgar', [\App\Http\Controllers\ContactCenter\ConsolaController::class, 'colgar'])->middleware($p('agente', 'ver'))->name('llamadas.colgar');
+        Route::post('llamadas/{llamada}/simular', [\App\Http\Controllers\ContactCenter\ConsolaController::class, 'simular'])->middleware($p('agente', 'ver'))->name('llamadas.simular');
+        Route::post('llamadas/{llamada}/tipificar', [\App\Http\Controllers\ContactCenter\ConsolaController::class, 'tipificar'])->middleware($p('agente', 'ver'))->name('llamadas.tipificar');
+
+        Route::get('campanas', [\App\Http\Controllers\ContactCenter\CampanasController::class, 'index'])->middleware($p('campana', 'ver'))->name('campanas.index');
+        Route::get('campanas/crear', [\App\Http\Controllers\ContactCenter\CampanasController::class, 'create'])->middleware($p('campana', 'crear'))->name('campanas.create');
+        Route::post('campanas', [\App\Http\Controllers\ContactCenter\CampanasController::class, 'store'])->middleware($p('campana', 'crear'))->name('campanas.store');
+        Route::get('campanas/{campana}', [\App\Http\Controllers\ContactCenter\CampanasController::class, 'show'])->middleware($p('campana', 'ver'))->name('campanas.show');
+        Route::get('campanas/{campana}/editar', [\App\Http\Controllers\ContactCenter\CampanasController::class, 'edit'])->middleware($p('campana', 'editar'))->name('campanas.edit');
+        Route::put('campanas/{campana}', [\App\Http\Controllers\ContactCenter\CampanasController::class, 'update'])->middleware($p('campana', 'editar'))->name('campanas.update');
+        Route::post('campanas/{campana}/estado', [\App\Http\Controllers\ContactCenter\CampanasController::class, 'estado'])->middleware($p('campana', 'editar'))->name('campanas.estado');
+        Route::post('campanas/{campana}/importar', [\App\Http\Controllers\ContactCenter\CampanasController::class, 'importar'])->middleware($p('campana', 'editar'))->name('campanas.importar');
+
+        Route::get('asignacion', [\App\Http\Controllers\ContactCenter\AsignacionController::class, 'index'])->middleware($p('asignacion', 'ver'))->name('asignacion');
+        Route::post('asignacion/reasignar', [\App\Http\Controllers\ContactCenter\AsignacionController::class, 'reasignar'])->middleware($p('asignacion', 'editar'))->name('asignacion.reasignar');
+        Route::post('asignacion/{campana}', [\App\Http\Controllers\ContactCenter\AsignacionController::class, 'asignar'])->middleware($p('asignacion', 'editar'))->name('asignacion.asignar');
+
+        Route::get('guiones', [\App\Http\Controllers\ContactCenter\GuionesController::class, 'index'])->middleware($p('script', 'ver'))->name('guiones');
+        Route::post('guiones', [\App\Http\Controllers\ContactCenter\GuionesController::class, 'store'])->middleware($p('script', 'crear'))->name('guiones.store');
+        Route::put('guiones/{guion}', [\App\Http\Controllers\ContactCenter\GuionesController::class, 'update'])->middleware($p('script', 'editar'))->name('guiones.update');
+
+        Route::get('tiempo-real', [\App\Http\Controllers\ContactCenter\OperacionController::class, 'tiempoReal'])->middleware($p('tiempo-real', 'ver'))->name('tiempo-real');
+        Route::get('panel', [\App\Http\Controllers\ContactCenter\OperacionController::class, 'panel'])->middleware($p('panel-de-control', 'ver'))->name('panel');
+        Route::post('panel/colas', [\App\Http\Controllers\ContactCenter\OperacionController::class, 'guardarCola'])->middleware($p('panel-de-control', 'editar'))->name('panel.colas.store');
+        Route::put('panel/colas/{cola}', [\App\Http\Controllers\ContactCenter\OperacionController::class, 'guardarCola'])->middleware($p('panel-de-control', 'editar'))->name('panel.colas.update');
+        Route::put('panel/campanas/{campana}/horario', [\App\Http\Controllers\ContactCenter\OperacionController::class, 'horario'])->middleware($p('panel-de-control', 'editar'))->name('panel.horario');
+
+        Route::get('auditoria', [\App\Http\Controllers\ContactCenter\CalidadController::class, 'auditoria'])->middleware($p('auditoria', 'ver'))->name('auditoria');
+        Route::get('auditoria/evaluaciones/{auditoria}', [\App\Http\Controllers\ContactCenter\CalidadController::class, 'verAuditoria'])->middleware($p('auditoria', 'ver'))->name('auditoria.ver');
+        Route::post('auditoria/criterios', [\App\Http\Controllers\ContactCenter\CalidadController::class, 'guardarCriterio'])->middleware($p('auditoria', 'editar'))->name('auditoria.criterios.store');
+        Route::put('auditoria/criterios/{criterio}', [\App\Http\Controllers\ContactCenter\CalidadController::class, 'guardarCriterio'])->middleware($p('auditoria', 'editar'))->name('auditoria.criterios.update');
+        Route::post('auditoria/{llamada}', [\App\Http\Controllers\ContactCenter\CalidadController::class, 'evaluar'])->middleware($p('auditoria', 'crear'))->name('auditoria.evaluar');
+
+        Route::get('grabaciones', [\App\Http\Controllers\ContactCenter\CalidadController::class, 'grabaciones'])->middleware($p('grabaciones', 'ver'))->name('grabaciones');
+        Route::post('grabaciones/{llamada}', [\App\Http\Controllers\ContactCenter\CalidadController::class, 'solicitarGrabacion'])->middleware([$p('grabaciones', 'escuchar'), 'throttle:20,1'])->name('grabaciones.solicitar');
+        Route::get('grabaciones/{llamada}/audio', [\App\Http\Controllers\ContactCenter\CalidadController::class, 'audio'])->middleware($p('grabaciones', 'escuchar'))->name('grabaciones.audio');
+    });
+
+    // Configuración → telefonía
+    Route::prefix('configuracion/telefonia')->name('configuracion.telefonia.')->group(function () {
+        $t = \App\Http\Controllers\ContactCenter\TelefoniaController::class;
+        Route::get('proveedores', [$t, 'proveedores'])->middleware('permiso:configuracion.proveedor-ip.ver')->name('proveedores');
+        Route::post('proveedores', [$t, 'guardarProveedor'])->middleware('permiso:configuracion.proveedor-ip.crear')->name('proveedores.store');
+        Route::put('proveedores/{proveedor}', [$t, 'guardarProveedor'])->middleware('permiso:configuracion.proveedor-ip.editar')->name('proveedores.update');
+        Route::post('proveedores/{proveedor}/probar', [$t, 'probarProveedor'])->middleware(['permiso:configuracion.proveedor-ip.editar', 'throttle:10,1'])->name('proveedores.probar');
+        Route::get('numeros', [$t, 'numeros'])->middleware('permiso:configuracion.numero-entrante.ver')->name('numeros');
+        Route::post('numeros', [$t, 'guardarNumero'])->middleware('permiso:configuracion.numero-entrante.crear')->name('numeros.store');
+        Route::put('numeros/{numero}', [$t, 'guardarNumero'])->middleware('permiso:configuracion.numero-entrante.editar')->name('numeros.update');
+        Route::get('ivr', [$t, 'ivrs'])->middleware('permiso:configuracion.ivr.ver')->name('ivr');
+        Route::post('ivr', [$t, 'guardarIvr'])->middleware('permiso:configuracion.ivr.crear')->name('ivr.store');
+        Route::put('ivr/{ivr}', [$t, 'guardarIvr'])->middleware('permiso:configuracion.ivr.editar')->name('ivr.update');
+        Route::get('lista-negra', [$t, 'listaNegra'])->middleware('permiso:configuracion.lista-negra.ver')->name('lista-negra');
+        Route::post('lista-negra', [$t, 'agregarListaNegra'])->middleware('permiso:configuracion.lista-negra.crear')->name('lista-negra.store');
+        Route::delete('lista-negra/{numero}', [$t, 'quitarListaNegra'])->middleware('permiso:configuracion.lista-negra.eliminar')->name('lista-negra.destroy');
+    });
+
     // Finanzas: tesorería, contabilidad y honorarios
     Route::prefix('finanzas')->name('finanzas.')->group(function () {
         Route::get('flujos-de-caja', [FlujoCajaController::class, 'index'])->middleware('permiso:finanzas.flujos-de-caja.ver')->name('flujo-caja');

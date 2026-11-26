@@ -36,6 +36,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ProveedorDTE::class, ProveedorDteSimulado::class);
         // RRHH: firma electrónica simulada y lector del archivo del reloj control (proveedores reales en fase 4).
         $this->app->bind(\App\Modules\RRHH\Integraciones\FirmaElectronica::class, \App\Modules\RRHH\Integraciones\FirmaSimulada::class);
+        // Sin una central real configurada se usa la simulada; la real se conecta implementando Pbx.
+        $this->app->singleton(\App\Modules\ContactCenter\Telefonia\Pbx::class, \App\Modules\ContactCenter\Telefonia\PbxSimulada::class);
         $this->app->bind(\App\Modules\RRHH\Integraciones\RelojControl::class, \App\Modules\RRHH\Integraciones\RelojCsv::class);
         // Transportistas externos: por ahora solo el simulado (integraciones reales en fase 4).
         $this->app->singleton(\App\Modules\Inventario\Transporte\Transportistas::class, fn () => new \App\Modules\Inventario\Transporte\Transportistas([new \App\Modules\Inventario\Transporte\TransportistaSimulado]));

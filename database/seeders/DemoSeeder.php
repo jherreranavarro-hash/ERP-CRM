@@ -140,6 +140,7 @@ class DemoSeeder extends Seeder
             }
 
             $this->rrhh($admin);
+            $this->contactCenter($admin, User::where('email', 'caja@obramax.cl')->first());
 
             Cliente::firstOrCreate(['rut' => '11111111-1'], ['razon_social' => 'Juan Pérez Soto', 'giro' => 'Particular', 'direccion' => 'Pasaje Uno 123', 'comuna' => 'Maipú', 'ciudad' => 'Santiago', 'lista_precio' => 'meson']);
         });
@@ -171,6 +172,53 @@ class DemoSeeder extends Seeder
             $c = $contratos->guardar($e, ['tipo' => $tipo, 'cargo' => $cargo, 'jornada_horas' => 42, 'sueldo_base' => $sueldo, 'gratificacion' => true, 'colacion' => 45000, 'movilizacion' => 35000,
                 'comision_pct' => $comision, 'fecha_inicio' => $ingreso, 'fecha_termino' => $tipo === 'plazo_fijo' ? now()->addDays(20)->toDateString() : null, 'texto' => "Contrato de trabajo de {$nombres} {$apellidos}."], $admin);
             $contratos->sincronizarFirma($contratos->enviarAFirma($c, $admin), $admin);
+        }
+    }
+
+    /** Contact center: cola, menú de voz, guion, checklist de calidad, dos agentes y una campaña activa con prospectos asignados. */
+    private function contactCenter(User $admin, ?User $otra): void
+    {
+        if (\App\Modules\ContactCenter\Models\Campana::exists()) {
+            return;
+        }
+        $cola = \App\Modules\ContactCenter\Models\Cola::create(['nombre' => 'Ventas', 'estrategia' => 'menos_reciente', 'espera_max_seg' => 120, 'nivel_servicio_seg' => 20, 'activo' => true]);
+        $ivr = \App\Modules\ContactCenter\Models\Ivr::create(['nombre' => 'Principal', 'bienvenida' => 'Bienvenido a Obramax. Para ventas marque 1. Para despachos marque 2.', 'activo' => true,
+            'opciones' => [['tecla' => '1', 'etiqueta' => 'Ventas', 'accion' => 'cola', 'destino' => $cola->id], ['tecla' => '2', 'etiqueta' => 'Despachos', 'accion' => 'cola', 'destino' => $cola->id]],
+            'horario' => ['dias' => [1, 2, 3, 4, 5, 6], 'desde' => '08:30', 'hasta' => '19:00'], 'fuera_de_horario' => 'Nuestro horario es de lunes a sábado de 8:30 a 19:00.']);
+        \App\Modules\ContactCenter\Models\NumeroEntrante::create(['numero' => '+56222345678', 'descripcion' => 'Línea de ventas', 'destino_tipo' => 'ivr', 'destino_id' => $ivr->id, 'activo' => true]);
+        foreach ([['Saluda y se identifica', 10, false], ['Confirma los datos del cliente', 20, true], ['Ofrece el producto adecuado', 30, false], ['Registra el resultado', 20, false], ['Cierra con cortesía', 20, false]] as $i => [$n, $p, $c]) {
+            \App\Modules\ContactCenter\Models\CriterioCalidad::create(['nombre' => $n, 'peso' => $p, 'critico' => $c, 'activo' => true, 'orden' => $i]);
+        }
+        $guion = \App\Modules\ContactCenter\Models\Guion::create(['nombre' => 'Constructoras: obra gruesa', 'version' => 1, 'activo' => true, 'actualizado_por' => $admin->id, 'pasos' => [
+            ['titulo' => 'Saludo', 'texto' => "Buenos días, le habla {agente} de Obramax. ¿Hablo con el encargado de compras?", 'respuestas' => [['texto' => 'Sí', 'siguiente' => 1], ['texto' => 'No está', 'siguiente' => 3]]],
+            ['titulo' => 'Necesidad', 'texto' => '¿Tienen obras en curso que necesiten cemento, fierro o áridos en las próximas semanas?', 'respuestas' => [['texto' => 'Sí', 'siguiente' => 2], ['texto' => 'No por ahora', 'siguiente' => 3]]],
+            ['titulo' => 'Oferta', 'texto' => 'Tenemos despacho a obra en 48 horas y precios por volumen. ¿Le preparo una cotización?', 'respuestas' => []],
+            ['titulo' => 'Cierre', 'texto' => 'Muchas gracias por su tiempo. ¿Cuándo le acomoda que volvamos a llamar?', 'respuestas' => []],
+        ]]);
+        $agentes = [\App\Modules\ContactCenter\Models\Agente::create(['user_id' => $admin->id, 'extension' => '201', 'habilidades' => ['obra gruesa', 'empresas'], 'zonas' => [], 'capacidad' => 50, 'cola_id' => $cola->id, 'estado' => 'desconectado'])];
+        if ($otra) {
+            $agentes[] = \App\Modules\ContactCenter\Models\Agente::create(['user_id' => $otra->id, 'extension' => '202', 'habilidades' => ['particulares'], 'zonas' => ['Maipú', 'Pudahuel'], 'capacidad' => 30, 'cola_id' => $cola->id, 'estado' => 'desconectado']);
+        }
+        $campana = \App\Modules\ContactCenter\Models\Campana::create(['nombre' => 'Constructoras zona poniente', 'tipo' => 'saliente', 'estado' => 'activa', 'fecha_inicio' => now()->startOfMonth()->toDateString(),
+            'descripcion' => 'Prospección de constructoras medianas para obra gruesa.', 'meta_contactos' => 40, 'meta_cotizaciones' => 10, 'meta_ventas' => 15000000,
+            'horario' => ['dias' => [1, 2, 3, 4, 5, 6, 7], 'desde' => '00:00', 'hasta' => '23:59'], 'max_intentos' => 3, 'asignacion' => 'zona', 'guion_id' => $guion->id, 'cola_id' => $cola->id, 'creado_por' => $admin->id]);
+        $campana->agentes()->sync(collect($agentes)->mapWithKeys(fn ($a) => [$a->id => ['empresa_id' => $campana->empresa_id]])->all());
+        $csv = "nombre;telefono;rut;email;comuna;direccion\n";
+        foreach ([['Constructora Los Andes', 'Maipú'], ['Inmobiliaria Poniente', 'Pudahuel'], ['Edificaciones Sur', 'Cerrillos'], ['Obras Civiles Ríos', 'Maipú'], ['Constructora Cordillera', 'Lo Prado'], ['Ingeniería Pacífico', 'Estación Central'], ['Construcciones Valle', 'Pudahuel'], ['Grupo Austral', 'Quinta Normal']] as $i => [$n, $c]) {
+            $csv .= "{$n};+5699".str_pad((string) (1234500 + $i * 7), 7, '0', STR_PAD_LEFT).";;;{$c};\n";
+        }
+        $asignador = app(\App\Modules\ContactCenter\Asignador::class);
+        $asignador->importar($campana, $csv, $admin);
+        $asignador->asignar($campana, $admin);
+
+        // Dos llamadas ya terminadas, con grabación simulada, para revisar auditoría y grabaciones.
+        $leads = \App\Modules\ContactCenter\Models\Lead::where('campana_id', $campana->id)->orderBy('id')->limit(2)->get();
+        foreach ($leads as $i => $lead) {
+            $agente = $agentes[min($i + 1, count($agentes) - 1)];
+            $inicio = now()->subDay()->setTime(10 + $i, 15);
+            \App\Modules\ContactCenter\Models\Llamada::create(['campana_id' => $campana->id, 'lead_id' => $lead->id, 'agente_id' => $agente->id, 'direccion' => 'saliente', 'numero' => $lead->telefono,
+                'estado' => 'terminada', 'pbx_id' => 'demo-'.$lead->id, 'inicio' => $inicio, 'contestada_at' => $inicio->copy()->addSeconds(12), 'fin' => $inicio->copy()->addSeconds(200),
+                'espera_seg' => 12, 'duracion_seg' => 188, 'resultado' => $i ? 'interesado' : 'volver_a_llamar', 'notas' => 'Llamada de demostración.', 'grabacion_ref' => 'demo-'.$lead->id.'.wav']);
         }
     }
 }

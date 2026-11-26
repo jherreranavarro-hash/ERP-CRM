@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\Route;
 | Documentación: docs/api-v1.md.
 */
 
+// Eventos de la central telefónica: firmados con HMAC, sin sesión ni token de usuario.
+Route::post('/pbx/eventos', \App\Http\Controllers\Api\PbxWebhookController::class)->middleware('throttle:600,1')->name('pbx.eventos');
+
 Route::prefix('v1')->middleware(['auth:sanctum', 'token.api', 'throttle:api-token'])->group(function () {
     Route::get('/ping', fn () => ['ok' => true, 'hora' => now()->toIso8601String()]);
 
