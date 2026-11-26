@@ -123,7 +123,7 @@ class Contratos
     {
         $dias = (int) $this->parametros->valor('rrhh.dias_aviso_contrato');
 
-        return Contrato::with('empleado:id,nombres,apellidos')->where('estado', 'vigente')->whereNotNull('fecha_termino')
+        return Contrato::with('empleado:id,nombres,apellidos,rut')->where('estado', 'vigente')->whereNotNull('fecha_termino')
             ->where('fecha_termino', '<=', now()->addDays($dias)->toDateString())->orderBy('fecha_termino')->get();
     }
 }

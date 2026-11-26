@@ -214,7 +214,21 @@ class RrhhTest extends TestCase
         $doc = $docs->emitir($docs->guardar(['tipo_dte' => 33, 'cliente_id' => $cliente->id, 'local_id' => $this->local->id, 'lineas' => [['producto_id' => $cemento->id, 'cantidad' => '20']]], $vendedor), $vendedor);
         $com = Comision::where('documento_id', $doc->id)->firstOrFail();
         $this->assertSame(2000, $com->monto);                       // 2% de 100.000 neto
+        $this->assertSame('pendiente', $com->estado);
         $periodo = $com->periodo;
+        $com->forceFill(['estado' => 'aprobada', 'aprobado_por' => $this->jefe->id])->save();
+
+        // Regla por categoría: pisa la tasa del contrato.
+        $cat = \App\Modules\Comercial\Models\Categoria::create(['nombre' => 'Cementos']);
+        $cemento->update(['categoria_id' => $cat->id]);
+        \App\Modules\RRHH\Models\ReglaComision::create(['categoria_id' => $cat->id, 'tasa' => 5]);
+        $doc2 = $docs->emitir($docs->guardar(['tipo_dte' => 33, 'cliente_id' => $cliente->id, 'local_id' => $this->local->id, 'lineas' => [['producto_id' => $cemento->id, 'cantidad' => '10']]], $vendedor), $vendedor);
+        $this->assertSame(2500, Comision::where('documento_id', $doc2->id)->value('monto')); // 5% de 50.000, queda pendiente: no entra a la nómina
+
+        // Anticipo de quincena con tope del 50%.
+        $ant = app(\App\Modules\RRHH\Anticipos::class);
+        $this->falla(fn () => $ant->registrar($e, ['fecha' => $periodo.'-15', 'monto' => 500000], $this->rrhh), 'monto');
+        $ant->registrar($e, ['fecha' => $periodo.'-15', 'monto' => 150000], $this->rrhh);
 
         // Préstamo con tope del 15% y cuatro ojos.
         $pr = app(Prestamos::class);
@@ -229,6 +243,7 @@ class RrhhTest extends TestCase
         $haberes = collect($l->haberes)->pluck('monto', 'concepto');
         $this->assertSame(2000, $haberes['Comisiones por ventas']);
         $this->assertSame(100000, collect($l->descuentos)->firstWhere('concepto', 'Cuota de préstamo')['monto']);
+        $this->assertSame(150000, collect($l->descuentos)->firstWhere('concepto', 'Anticipo de sueldo')['monto']);
 
         $l = $svc->ajustarBonos($l, [['concepto' => 'Bono de metas', 'monto' => 50000]], $this->rrhh);
         $this->assertSame(50000, collect($l->haberes)->firstWhere('concepto', 'Bono de metas')['monto']);
@@ -240,6 +255,8 @@ class RrhhTest extends TestCase
         DB::statement('SET CONSTRAINTS ALL IMMEDIATE');
         DB::statement('SET CONSTRAINTS ALL DEFERRED');
         $this->assertSame(200000, $p->fresh()->saldo);
+        $this->assertSame('descontado', \App\Modules\RRHH\Models\Anticipo::value('estado'));
+        $this->assertSame(0, app(Contabilidad::class)->saldos(null, now()->addDay()->toDateString())->firstWhere('codigo', '1.1.07')->saldo);
         $asiento = Asiento::where('origen_tipo', 'liquidacion')->with('lineas')->firstOrFail();
         $this->assertSame((int) $asiento->lineas->sum('debe'), (int) $asiento->lineas->sum('haber'));
         $this->esperarRechazoBd(fn () => DB::table('liquidaciones')->where('nomina_id', $n->id)->update(['liquido' => 1]));
@@ -248,6 +265,15 @@ class RrhhTest extends TestCase
         $svc->pagar($n->fresh(), now()->toDateString(), $this->jefe);
         $this->assertSame(0, app(Contabilidad::class)->saldos(null, now()->addDay()->toDateString())->firstWhere('codigo', '2.1.05')->saldo);
         $this->assertStringStartsWith('%PDF', $svc->pdf(Liquidacion::firstOrFail()));
+
+        // Pantallas con datos reales, vistas por el analista de RRHH.
+        $liq = Liquidacion::firstOrFail()->id;
+        foreach (["/rrhh/nominas", "/rrhh/nominas/{$n->id}", "/rrhh/ausencias?estado=todas", "/rrhh/prestamos", "/rrhh/anticipos?periodo={$periodo}",
+            "/rrhh/comisiones?periodo={$periodo}", "/rrhh/indicadores", "/rrhh/cumplimiento", "/rrhh/finiquitos", "/rrhh/contratos", "/rrhh/personal", "/rrhh/personal/{$e->id}", "/rrhh/contratos/crear?empleado={$e->id}", "/rrhh/asistencia?empleado={$e->id}", "/rrhh/ausencias/saldo/{$e->id}"] as $ruta) {
+            $this->entrar($this->rrhh)->get($ruta)->assertOk();
+        }
+        $this->entrar($this->rrhh)->get("/rrhh/liquidaciones/{$liq}/pdf")->assertOk()->assertHeader('Content-Type', 'application/pdf');
+        $this->assertStringContainsString('Líquido', $this->entrar($this->rrhh)->get("/rrhh/nominas/{$n->id}?exportar=1")->streamedContent());
     }
 
     public function test_finiquito_por_necesidades_de_la_empresa(): void

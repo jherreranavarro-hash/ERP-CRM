@@ -20,9 +20,11 @@ class Comision extends Model
 
     public const UPDATED_AT = null;
 
+    public const ESTADOS = ['pendiente' => 'Por aprobar', 'aprobada' => 'Aprobada'];
+
     protected function casts(): array
     {
-        return ['base' => 'integer', 'monto' => 'integer', 'tasa' => 'decimal:2'];
+        return ['base' => 'integer', 'monto' => 'integer', 'tasa' => 'decimal:2', 'detalle' => 'array'];
     }
 
     public function empleado(): BelongsTo

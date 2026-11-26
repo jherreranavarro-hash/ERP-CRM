@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\Core\Auditoria\Auditoria;
 use App\Modules\Core\Tenancy\Tenancy;
 use App\Modules\Finanzas\Contabilidad;
+use App\Modules\RRHH\Models\Anticipo;
 use App\Modules\RRHH\Models\Comision;
 use App\Modules\RRHH\Models\Contrato;
 use App\Modules\RRHH\Models\Empleado;
@@ -107,6 +108,7 @@ class Nominas
                 $this->contabilizar($l, $n, $fecha, $user);
                 $this->descontarPrestamos($l->empleado_id, (int) collect($l->descuentos)->where('concepto', 'Cuota de préstamo')->sum('monto'), $n->periodo);
             }
+            Anticipo::where('periodo', $n->periodo)->where('estado', 'registrado')->whereIn('empleado_id', $liqs->pluck('empleado_id'))->update(['estado' => 'descontado', 'nomina_id' => $n->id]);
             $n->forceFill(['estado' => 'aprobada', 'aprobado_por' => $user->id, 'aprobado_at' => now()])->save();
             $this->auditoria->registrar('nomina.aprobar', $n, null, ['periodo' => $n->periodo, 'liquido' => $n->total_liquido]);
 
@@ -172,9 +174,10 @@ class Nominas
         $r = $this->motor->calcular($e, $c, [
             'dias_trabajados' => $dias,
             'horas_extra' => $e->turno_id ? $this->asistencia->horasExtra($e, $periodo) : '0',
-            'comisiones' => (int) Comision::where('empleado_id', $e->id)->where('periodo', $periodo)->sum('monto'),
+            'comisiones' => (int) Comision::where('empleado_id', $e->id)->where('periodo', $periodo)->where('estado', 'aprobada')->sum('monto'),
             'bonos' => $bonos,
             'cuota_prestamo' => $cuota,
+            'anticipo' => (int) Anticipo::where('empleado_id', $e->id)->where('periodo', $periodo)->where('estado', 'registrado')->sum('monto'),
         ], $ind);
         // Marca los bonos para conservarlos si se regenera la nómina.
         $conceptos = array_column($bonos, 'concepto');
@@ -194,6 +197,7 @@ class Nominas
         $legales = (int) collect($l->descuentos)->where('legal', true)->sum('monto') - $l->impuesto;
         $aportes = (int) collect($l->aportes)->sum('monto');
         $cuota = (int) collect($l->descuentos)->where('concepto', 'Cuota de préstamo')->sum('monto');
+        $anticipo = (int) collect($l->descuentos)->where('concepto', 'Anticipo de sueldo')->sum('monto');
         $this->contabilidad->automatico('liquidacion', $l->id, $fecha, "Remuneraciones {$n->periodo} · {$l->empleado->nombreCompleto()}", [
             ['remuneraciones', $l->imponible + $l->no_imponible, 0],
             ['leyes_sociales', $aportes, 0],
@@ -201,6 +205,7 @@ class Nominas
             ['leyes_sociales_por_pagar', 0, $legales + $aportes],
             ['impuesto_unico_por_pagar', 0, $l->impuesto],
             ['prestamos_personal', 0, $cuota],
+            ['anticipos_personal', 0, $anticipo],
         ], $user, $l->empleado->centro_costo_id);
     }
 

@@ -346,6 +346,7 @@ class Catalogo
                     'nomina.recargo_horas_extra_pct' => ['etiqueta' => 'Recargo de horas extraordinarias', 'tipo' => 'porcentaje', 'inicial' => 50, 'min' => 50, 'max' => 200, 'unidad' => '%', 'alcances' => self::GE, 'estricto' => 'mayor'],
                     'nomina.max_horas_extra_dia' => ['etiqueta' => 'Máximo de horas extra por día', 'tipo' => 'entero', 'inicial' => 2, 'min' => 0, 'max' => 2, 'unidad' => 'horas', 'alcances' => self::GE, 'estricto' => 'menor'],
                     'nomina.prestamo_max_cuota_pct' => ['etiqueta' => 'Cuota máxima de préstamo sobre el sueldo', 'tipo' => 'porcentaje', 'inicial' => 15, 'min' => 1, 'max' => 15, 'unidad' => '%', 'alcances' => self::GE, 'estricto' => 'menor', 'ayuda' => 'Art. 58 del Código del Trabajo: los descuentos voluntarios no superan el 15% de la remuneración.'],
+                    'nomina.anticipo_max_pct' => ['etiqueta' => 'Anticipo máximo del mes sobre el sueldo base', 'tipo' => 'porcentaje', 'inicial' => 50, 'min' => 1, 'max' => 50, 'unidad' => '%', 'alcances' => self::GE, 'estricto' => 'menor'],
                     'rrhh.dias_aviso_contrato' => ['etiqueta' => 'Aviso de vencimiento de contratos', 'tipo' => 'entero', 'inicial' => 30, 'min' => 1, 'max' => 90, 'unidad' => 'días', 'alcances' => self::GE],
                 ],
             ],

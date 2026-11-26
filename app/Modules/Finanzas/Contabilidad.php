@@ -29,6 +29,7 @@ class Contabilidad
         ['1.1.04', 'IVA crédito fiscal', 'activo', 'iva_credito'],
         ['1.1.05', 'Mercaderías', 'activo', 'inventario'],
         ['1.1.06', 'Préstamos al personal', 'activo', 'prestamos_personal'],
+        ['1.1.07', 'Anticipos al personal', 'activo', 'anticipos_personal'],
         ['1.2.01', 'Activo fijo', 'activo', null],
         ['2.1.01', 'Proveedores', 'pasivo', 'proveedores'],
         ['2.1.02', 'IVA débito fiscal', 'pasivo', 'iva_debito'],

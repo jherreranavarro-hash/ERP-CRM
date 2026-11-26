@@ -23,6 +23,11 @@ class Turno extends Model
         return ['dias' => 'array', 'activo' => 'boolean', 'colacion_min' => 'integer'];
     }
 
+    public function empleados(): HasMany
+    {
+        return $this->hasMany(Empleado::class);
+    }
+
     /** Minutos efectivos del turno (descontando colación). */
     public function minutos(): int
     {

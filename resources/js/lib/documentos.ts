@@ -95,3 +95,38 @@ export const estadoPagoProveedor: Record<string, [Tono, string]> = {
     aplicado: ['ok', 'Aplicado'],
     rechazado: ['error', 'Rechazado'],
 };
+
+/* RRHH */
+export const estadoContrato: Record<string, [Tono, string]> = {
+    borrador: ['neutro', 'Borrador'],
+    por_firmar: ['alerta', 'Por firmar'],
+    vigente: ['ok', 'Vigente'],
+    terminado: ['neutro', 'Terminado'],
+};
+
+export const estadoAusencia: Record<string, [Tono, string]> = {
+    solicitada: ['alerta', 'Solicitada'],
+    aprobada: ['ok', 'Aprobada'],
+    rechazada: ['error', 'Rechazada'],
+    anulada: ['neutro', 'Anulada'],
+};
+
+export const estadoNomina: Record<string, [Tono, string]> = {
+    borrador: ['alerta', 'Borrador'],
+    aprobada: ['info', 'Aprobada'],
+    pagada: ['ok', 'Pagada'],
+};
+
+export const estadoPrestamo: Record<string, [Tono, string]> = {
+    por_aprobar: ['alerta', 'Por aprobar'],
+    vigente: ['info', 'Vigente'],
+    pagado: ['ok', 'Pagado'],
+    rechazado: ['error', 'Rechazado'],
+};
+
+export const estadoFiniquito: Record<string, [Tono, string]> = {
+    borrador: ['alerta', 'Por aprobar'],
+    aprobado: ['info', 'Aprobado'],
+    firmado: ['ok', 'Firmado y pagado'],
+    anulado: ['neutro', 'Anulado'],
+};
