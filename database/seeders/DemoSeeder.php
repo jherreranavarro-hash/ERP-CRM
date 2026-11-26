@@ -7,7 +7,11 @@ use App\Modules\Core\Models\Empresa;
 use App\Modules\Core\Models\Local;
 use App\Modules\Core\Models\Rol;
 use App\Modules\Core\Models\UsuarioEmpresa;
+use App\Modules\Comercial\Models\Categoria;
+use App\Modules\Comercial\Models\Cliente;
+use App\Modules\Comercial\Models\Producto;
 use App\Modules\Core\Tenancy\Tenancy;
+use App\Modules\Facturacion\Models\FolioRango;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -60,8 +64,39 @@ class DemoSeeder extends Seeder
             'local_id' => Local::where('codigo', 'MATRIZ')->value('id'),
         ]));
 
+        $this->facturacion($obramax, $admin);
+
         if ($nuevo && $this->command) {
             $this->command->warn("Usuarios demo: admin@obramax.cl y caja@obramax.cl · contraseña: {$password}");
         }
+    }
+
+    /** Facturación activa en Obramax con folios que siguen a los últimos vistos en Fenix (25-nov-2026). */
+    private function facturacion(Empresa $empresa, User $admin): void
+    {
+        app(Tenancy::class)->como($empresa, function () use ($admin) {
+            $p = app(\App\Modules\Core\Parametros\Parametros::class);
+            if (! $p->valor('modulos.facturacion')) {
+                $p->proponer('modulos.facturacion', true, 'empresa', 'Datos de demostración', $admin);
+            }
+
+            foreach ([33 => [1071, 2070], 39 => [1406, 3405], 61 => [254, 753], 56 => [1, 100], 52 => [1, 500], 34 => [1, 100]] as $tipo => [$desde, $hasta]) {
+                FolioRango::firstOrCreate(['tipo_dte' => $tipo, 'desde' => $desde], ['hasta' => $hasta, 'siguiente' => $desde, 'caf_referencia' => 'DEMO (sin validez)']);
+            }
+
+            $cat = ['Obra gruesa' => Categoria::firstOrCreate(['nombre' => 'Obra gruesa']), 'Terminaciones' => Categoria::firstOrCreate(['nombre' => 'Terminaciones']), 'Ferretería' => Categoria::firstOrCreate(['nombre' => 'Ferretería'])];
+            foreach ([
+                ['CEM-25', 'Cemento especial 25 kg', 'Obra gruesa', 'SAC', '4990', '4500'],
+                ['FIE-8', 'Fierro estriado 8 mm x 6 m', 'Obra gruesa', 'UN', '3290', '2990'],
+                ['YES-15', 'Plancha yeso-cartón 15 mm', 'Terminaciones', 'UN', '8490', '7790'],
+                ['PIN-1G', 'Pintura látex blanco 1 galón', 'Terminaciones', 'UN', '12990', '11490'],
+                ['TOR-100', 'Tornillo volcanita 6x1 (caja 100)', 'Ferretería', 'CJ', '2490', '2190'],
+            ] as [$sku, $nombre, $c, $u, $neto, $may]) {
+                Producto::firstOrCreate(['sku' => $sku], ['nombre' => $nombre, 'categoria_id' => $cat[$c]->id, 'unidad' => $u, 'precio_neto' => $neto, 'precio_mayorista' => $may]);
+            }
+
+            Cliente::firstOrCreate(['rut' => '76543210-3'], ['razon_social' => 'Constructora Andes SpA', 'giro' => 'Construcción de edificios', 'direccion' => 'Av. Los Leones 100', 'comuna' => 'Providencia', 'ciudad' => 'Santiago', 'lista_precio' => 'mayorista', 'tiene_credito' => true, 'cupo_credito' => 5000000, 'plazo_dias' => 30]);
+            Cliente::firstOrCreate(['rut' => '11111111-1'], ['razon_social' => 'Juan Pérez Soto', 'giro' => 'Particular', 'direccion' => 'Pasaje Uno 123', 'comuna' => 'Maipú', 'ciudad' => 'Santiago', 'lista_precio' => 'meson']);
+        });
     }
 }

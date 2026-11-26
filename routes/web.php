@@ -1,5 +1,11 @@
 <?php
 
+use App\Http\Controllers\Caja\DocumentosController;
+use App\Http\Controllers\Configuracion\ClientesController;
+use App\Http\Controllers\Configuracion\FoliosController;
+use App\Http\Controllers\Configuracion\ProductosController;
+use App\Http\Controllers\Finanzas\CuentasPorCobrarController;
+use App\Http\Controllers\Finanzas\LibroVentasController;
 use App\Http\Controllers\Configuracion\AuditoriaController;
 use App\Http\Controllers\Configuracion\EmpresasController;
 use App\Http\Controllers\Configuracion\LocalesController;
@@ -78,5 +84,48 @@ Route::middleware('auth')->group(function () {
         Route::get('tokens', [TokensController::class, 'index'])->middleware('permiso:configuracion.tokens-api.ver')->name('tokens.index');
         Route::post('tokens', [TokensController::class, 'store'])->middleware('permiso:configuracion.tokens-api.crear')->name('tokens.store');
         Route::delete('tokens/{token}', [TokensController::class, 'destroy'])->middleware('permiso:configuracion.tokens-api.eliminar')->name('tokens.destroy');
+
+        // Clientes
+        Route::get('clientes', [ClientesController::class, 'index'])->middleware('permiso:configuracion.clientes.ver')->name('clientes.index');
+        Route::post('clientes', [ClientesController::class, 'store'])->middleware('permiso:configuracion.clientes.crear')->name('clientes.store');
+        Route::put('clientes/{cliente}', [ClientesController::class, 'update'])->middleware('permiso:configuracion.clientes.editar')->name('clientes.update');
+        Route::delete('clientes/{cliente}', [ClientesController::class, 'destroy'])->middleware('permiso:configuracion.clientes.eliminar')->name('clientes.destroy');
+
+        // Productos y categorías
+        Route::get('productos', [ProductosController::class, 'index'])->middleware('permiso:configuracion.producto.ver')->name('productos.index');
+        Route::post('productos', [ProductosController::class, 'store'])->middleware('permiso:configuracion.producto.crear')->name('productos.store');
+        Route::put('productos/{producto}', [ProductosController::class, 'update'])->middleware('permiso:configuracion.producto.editar')->name('productos.update');
+        Route::delete('productos/{producto}', [ProductosController::class, 'destroy'])->middleware('permiso:configuracion.producto.eliminar')->name('productos.destroy');
+        Route::post('categorias', [ProductosController::class, 'guardarCategoria'])->middleware('permiso:configuracion.categoria.crear')->name('categorias.store');
+
+        // Folios (CAF)
+        Route::get('folios', [FoliosController::class, 'index'])->middleware('permiso:configuracion.folios.ver')->name('folios.index');
+        Route::post('folios', [FoliosController::class, 'store'])->middleware('permiso:configuracion.folios.crear')->name('folios.store');
+        Route::post('folios/{rango}/desactivar', [FoliosController::class, 'desactivar'])->middleware('permiso:configuracion.folios.crear')->name('folios.desactivar');
     });
+
+    // Búsquedas para formularios
+    Route::get('buscar/clientes', [ClientesController::class, 'buscar'])->middleware('permiso:caja.facturas-de-ventas.crear')->name('buscar.clientes');
+    Route::get('buscar/productos', [ProductosController::class, 'buscar'])->middleware('permiso:caja.facturas-de-ventas.crear')->name('buscar.productos');
+
+    // Caja → Facturas de Ventas
+    Route::prefix('caja/documentos')->name('caja.documentos.')->group(function () {
+        Route::get('/', [DocumentosController::class, 'index'])->middleware('permiso:caja.facturas-de-ventas.ver')->name('index');
+        Route::get('crear', [DocumentosController::class, 'create'])->middleware('permiso:caja.facturas-de-ventas.crear')->name('create');
+        Route::post('/', [DocumentosController::class, 'store'])->middleware('permiso:caja.facturas-de-ventas.crear')->name('store');
+        Route::post('calcular', [DocumentosController::class, 'calcular'])->middleware(['permiso:caja.facturas-de-ventas.crear', 'throttle:120,1'])->name('calcular');
+        Route::get('{documento}', [DocumentosController::class, 'show'])->middleware('permiso:caja.facturas-de-ventas.ver')->name('show');
+        Route::get('{documento}/editar', [DocumentosController::class, 'edit'])->middleware('permiso:caja.facturas-de-ventas.editar')->name('edit');
+        Route::put('{documento}', [DocumentosController::class, 'update'])->middleware('permiso:caja.facturas-de-ventas.editar')->name('update');
+        Route::delete('{documento}', [DocumentosController::class, 'destroy'])->middleware('permiso:caja.facturas-de-ventas.eliminar')->name('destroy');
+        Route::post('{documento}/aprobar', [DocumentosController::class, 'aprobar'])->middleware('permiso:caja.facturas-de-ventas.aprobar')->name('aprobar');
+        Route::post('{documento}/emitir', [DocumentosController::class, 'emitir'])->middleware('permiso:caja.facturas-de-ventas.emitir')->name('emitir');
+        Route::post('{documento}/pagos', [DocumentosController::class, 'pagar'])->middleware('permiso:caja.caja.crear')->name('pagar');
+        Route::post('{documento}/nota', [DocumentosController::class, 'nota'])->middleware('permiso:caja.facturas-de-ventas.anular')->name('nota');
+        Route::get('{documento}/pdf', [DocumentosController::class, 'pdf'])->middleware('permiso:caja.facturas-de-ventas.ver')->name('pdf');
+    });
+
+    // Finanzas
+    Route::get('finanzas/libro-de-ventas', [LibroVentasController::class, 'index'])->middleware('permiso:finanzas.libro-de-ventas.ver')->name('finanzas.libro-ventas');
+    Route::get('finanzas/cuentas-por-cobrar', [CuentasPorCobrarController::class, 'index'])->middleware('permiso:finanzas.cuentas-por-cobrar.ver')->name('finanzas.cuentas-por-cobrar');
 });

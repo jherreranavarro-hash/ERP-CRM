@@ -11,7 +11,8 @@ El desarrollo avanza por fases, cada una en su propio pull request:
 | Fase | Contenido |
 |---|---|
 | 1 | Base: login seguro, 2FA, sesiones, multiempresa con RLS, RBAC, trazabilidad inmutable, 28 mantenedores con pisos de seguridad, tokens de API |
-| 2 | Facturación CLP / SII (DTE con proveedor simulado), clientes, productos, cotización, caja |
+| 2 | Facturación CLP / SII: clientes, productos, folios, boletas, facturas, guías, NC/ND con aprobaciones y proveedor DTE simulado; libro de ventas, cuentas por cobrar y API v1 de ventas |
+| 2b | Cotización → documento, apertura y cierre de caja |
 | 3 | Resto de módulos (compras, inventario, RRHH, finanzas, contact center) |
 | 4 | Integraciones reales (SII, PBX, Meta) detrás de interfaces |
 
@@ -41,8 +42,13 @@ El seeder imprime la contraseña de los usuarios demo (`admin@obramax.cl` y `caj
 o usa la que definas en `DEMO_PASSWORD`. Ambos perfiles exigen activar la verificación en dos pasos
 al primer ingreso.
 
-En producción, programa el scheduler (`php artisan schedule:run` cada minuto): desactiva usuarios
-inactivos según el mantenedor de Usuarios.
+En producción, programa el scheduler (`php artisan schedule:run` cada minuto) y un worker de colas
+(`php artisan queue:work`): el envío al proveedor DTE va por cola y se reintenta cada 15 minutos
+si el proveedor no responde. El scheduler también desactiva usuarios inactivos.
+
+La facturación se activa por empresa en Parámetros → Módulos y funcionalidades. El proveedor DTE
+es simulado (`ProveedorDteSimulado`): los documentos no tienen validez tributaria hasta enlazar
+un proveedor certificado. La API está descrita en [docs/api-v1.md](docs/api-v1.md).
 
 ## Seguridad, en corto
 
