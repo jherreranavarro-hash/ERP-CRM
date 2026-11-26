@@ -3,7 +3,7 @@
 Sistema de gestión (ERP + CRM + Contact Center) para Obramax SpA, construido según la pestaña
 "Prompt de Desarrollo" del análisis forense de obramax.neighbour.cl.
 
-Stack: Laravel 11 · PHP 8.3 · PostgreSQL 16 · Redis · Inertia + Vue 3 + TypeScript · Tailwind.
+Stack: Laravel 12 · PHP 8.3 · PostgreSQL 16 · Redis · Inertia + Vue 3 + TypeScript · Tailwind.
 La gráfica (colores, tipografías Archivo y Barlow, logo) sigue el HTML de referencia de diseño.
 
 El desarrollo avanza por fases, cada una en su propio pull request:
