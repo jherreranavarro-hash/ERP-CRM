@@ -54,6 +54,11 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(\App\Modules\Facturacion\Eventos\DocumentoEmitido::class, \App\Modules\Inventario\Escuchas\MoverStockAlEmitir::class);
         Event::listen(\App\Modules\Facturacion\Eventos\DocumentoEmitido::class, \App\Modules\Finanzas\Escuchas\ContabilizarDocumento::class);
         Event::listen(\App\Modules\Facturacion\Eventos\DocumentoEmitido::class, \App\Modules\RRHH\Escuchas\RegistrarComision::class);
+        // Los dashboards se cachean; estos hechos los dejan obsoletos.
+        Event::listen(\App\Modules\Facturacion\Eventos\DocumentoEmitido::class, fn () => app(\App\Modules\Dashboard\Tablero::class)->invalidar());
+        foreach ([\App\Modules\Ventas\Models\Cotizacion::class, \App\Modules\Finanzas\Models\Asiento::class, \App\Modules\Facturacion\Models\Pago::class] as $modelo) {
+            $modelo::saved(fn () => app(\App\Modules\Dashboard\Tablero::class)->invalidar());
+        }
 
         RateLimiter::for('api-token', function (Request $request) {
             $token = $request->user()?->currentAccessToken();

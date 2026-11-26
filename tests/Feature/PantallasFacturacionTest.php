@@ -62,7 +62,8 @@ class PantallasFacturacionTest extends TestCase
             '/finanzas/flujos-de-caja', '/finanzas/honorarios', '/finanzas/centros-de-costo', '/finanzas/asientos', '/finanzas/asientos/crear', '/finanzas/plan-de-cuentas', '/finanzas/conciliacion',
             '/finanzas/balances', '/finanzas/balances?vista=resultados', '/finanzas/balances?vista=general', '/finanzas/balances?vista=mayor&cuenta_id=1',
             '/rrhh/personal', '/rrhh/personal/crear', '/rrhh/contratos', '/rrhh/contratos/plantillas', '/rrhh/turnos', '/rrhh/asistencia', '/rrhh/nominas',
-            '/rrhh/ausencias', '/rrhh/ausencias?estado=todas', '/rrhh/cumplimiento', '/rrhh/finiquitos', '/rrhh/indicadores', '/rrhh/anticipos', '/rrhh/comisiones', '/rrhh/prestamos'] as $ruta) {
+            '/rrhh/ausencias', '/rrhh/ausencias?estado=todas', '/rrhh/cumplimiento', '/rrhh/finiquitos', '/rrhh/indicadores', '/rrhh/anticipos', '/rrhh/comisiones', '/rrhh/prestamos',
+            '/dashboard', '/dashboard?desde=2026-01-01&hasta=2026-03-31', '/ventas/dashboard', '/ventas/cuentas-corrientes'] as $ruta) {
             $this->assertSame(200, $this->entrar($u)->get($ruta)->status(), $ruta);
         }
         $producto = app(Tenancy::class)->como($e, fn () => Producto::firstOrCreate(['sku' => 'K'], ['nombre' => 'Kardex', 'precio_neto' => '1000'])->id);
