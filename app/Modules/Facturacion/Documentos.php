@@ -7,9 +7,11 @@ use App\Modules\Caja\Models\TurnoCaja;
 use App\Modules\Comercial\Models\Cliente;
 use App\Modules\Comercial\Models\Producto;
 use App\Modules\Core\Auditoria\Auditoria;
+use App\Modules\Core\Models\Local;
 use App\Modules\Core\Parametros\Parametros;
 use App\Modules\Core\Tenancy\Tenancy;
 use App\Modules\Facturacion\Calculo\Calculadora;
+use App\Modules\Facturacion\Eventos\DocumentoEmitido;
 use App\Modules\Facturacion\Jobs\EnviarDocumentoSii;
 use App\Modules\Facturacion\Models\Documento;
 use App\Modules\Facturacion\Models\DocumentoReferencia;
@@ -72,11 +74,12 @@ class Documentos
         $motivos = $tipo === 61 ? [] : $this->motivosDeAprobacion($lineas, $descGlobal, $formaPago, $cliente, $totales['monto_total'], $doc);
 
         return DB::transaction(function () use ($doc, $datos, $user, $tipo, $cliente, $tasa, $lineas, $descGlobal, $totales, $formaPago, $motivos, $ivaIncluido) {
-            $doc ??= new Documento(['creado_por' => $user->id, 'cotizacion_id' => $datos['cotizacion_id'] ?? null]);
+            $doc ??= new Documento(['creado_por' => $user->id, 'cotizacion_id' => $datos['cotizacion_id'] ?? null, 'orden_venta_id' => $datos['orden_venta_id'] ?? null]);
             $doc->fill([
                 'tipo_dte' => $tipo,
                 'cliente_id' => $cliente?->id,
-                'local_id' => $datos['local_id'] ?? $user->membresiaActual()?->local_id,
+                // Sin local explícito: el del usuario, o el primer local de venta de la empresa (el stock vive en un local).
+                'local_id' => $datos['local_id'] ?? $doc->local_id ?? $user->membresiaActual()?->local_id ?? Local::where('activo', true)->orderBy('es_bodega')->orderBy('id')->value('id'),
                 'forma_pago' => $formaPago,
                 'fecha_emision' => now()->toDateString(),
                 'fecha_vencimiento' => null,
@@ -280,6 +283,9 @@ class Documentos
             if ($referido && $doc->tipo_dte === 61) {
                 $this->aplicarNotaCredito($doc, $referido, $doc->referencias->first()->codigo);
             }
+
+            // Otros módulos reaccionan aquí (Inventario descuenta stock); un error revierte la emisión.
+            event(new DocumentoEmitido($doc, $user));
 
             $this->auditoria->registrar('documento.emitir', $doc, null, ['tipo_dte' => $doc->tipo_dte, 'folio' => $folio, 'total' => $doc->monto_total]);
 

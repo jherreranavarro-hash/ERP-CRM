@@ -20,6 +20,7 @@ class PantallasFacturacionTest extends TestCase
         $jefe = $this->usuario($e, 'Gerente');
         $pid = app(Tenancy::class)->como($e, function () use ($jefe) {
             app(Parametros::class)->proponer('modulos.facturacion', true, 'empresa', 'Pruebas', $jefe);
+            app(Parametros::class)->proponer('inventario.permitir_negativo', true, 'empresa', 'Pruebas', $jefe);
             FolioRango::create(['tipo_dte' => 39, 'desde' => 1, 'hasta' => 10, 'siguiente' => 1]);
             \App\Modules\Caja\Models\Caja::create(['local_id' => \App\Modules\Core\Models\Local::create(['codigo' => 'L1', 'nombre' => 'Local'])->id, 'nombre' => 'Caja 1']);
 
@@ -54,9 +55,12 @@ class PantallasFacturacionTest extends TestCase
         $u = $this->usuario($e, 'Administrador del sistema', superadmin: true);
 
         foreach (['/caja/documentos', '/caja/documentos/crear', '/configuracion/clientes', '/configuracion/productos', '/configuracion/folios', '/finanzas/libro-de-ventas', '/finanzas/cuentas-por-cobrar',
-            '/ventas/cotizaciones', '/ventas/cotizaciones/crear', '/caja/turno', '/caja/cierres'] as $ruta) {
+            '/ventas/cotizaciones', '/ventas/cotizaciones/crear', '/caja/turno', '/caja/cierres',
+            '/inventario/stock', '/inventario/recepciones', '/inventario/recepciones/crear', '/inventario/mermas', '/ventas/ordenes'] as $ruta) {
             $this->entrar($u)->get($ruta)->assertOk();
         }
+        $producto = app(Tenancy::class)->como($e, fn () => Producto::firstOrCreate(['sku' => 'K'], ['nombre' => 'Kardex', 'precio_neto' => '1000'])->id);
+        $this->entrar($u)->get("/inventario/stock/{$producto}/kardex")->assertOk();
     }
 
     public function test_cliente_con_rut_invalido_se_rechaza(): void

@@ -51,6 +51,8 @@ class CotizacionesYCajaTest extends TestCase
         $this->jefe = $this->usuario($this->empresa, 'Gerente');
         app(Tenancy::class)->establecer($this->empresa);
         app(Parametros::class)->proponer('modulos.facturacion', true, 'empresa', 'Pruebas', $this->jefe);
+        // Estas pruebas son de cotización y caja: el stock se prueba en InventarioTest.
+        app(Parametros::class)->proponer('inventario.permitir_negativo', true, 'empresa', 'Pruebas', $this->jefe);
         foreach ([33 => [1, 100], 39 => [1, 100]] as $tipo => [$d, $h]) {
             FolioRango::create(['tipo_dte' => $tipo, 'desde' => $d, 'hasta' => $h, 'siguiente' => $d]);
         }

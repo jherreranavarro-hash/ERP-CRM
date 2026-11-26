@@ -72,7 +72,7 @@ class CotizacionesController extends Controller
 
     public function show(Request $request, Cotizacion $cotizacion)
     {
-        $cotizacion->load('lineas', 'cliente', 'creador:id,name', 'aprobador:id,name', 'documento:id,tipo_dte,folio,estado', 'local:id,nombre');
+        $cotizacion->load('lineas', 'cliente', 'creador:id,name', 'aprobador:id,name', 'documento:id,tipo_dte,folio,estado', 'local:id,nombre', 'ordenVenta:id,numero,estado,reserva_hasta');
 
         return Inertia::render('Ventas/Cotizaciones/Show', [
             'cotizacion' => $this->detalle($cotizacion) + [
@@ -81,8 +81,13 @@ class CotizacionesController extends Controller
                 'local' => $cotizacion->local?->nombre,
                 'propia' => $cotizacion->creado_por === $request->user()->id,
                 'documento' => $cotizacion->documento ? ['id' => $cotizacion->documento->id, 'nombre' => $cotizacion->documento->nombre(), 'estado' => $cotizacion->documento->estado] : null,
+                'orden' => $cotizacion->ordenVenta ? ['id' => $cotizacion->ordenVenta->id, 'numero' => $cotizacion->ordenVenta->numero, 'estado' => $cotizacion->ordenVenta->estadoVisible()] : null,
+                'local_id' => $cotizacion->local_id,
+                'tiene_cliente' => (bool) $cotizacion->cliente_id,
             ],
             'puedeFacturar' => $request->user()->tienePermiso('caja.facturas-de-ventas.crear'),
+            'puedeOrden' => $request->user()->tienePermiso('ventascrm.orden-de-venta.crear'),
+            'locales' => Local::where('activo', true)->orderBy('es_bodega')->orderBy('nombre')->get(['id', 'nombre']),
         ]);
     }
 

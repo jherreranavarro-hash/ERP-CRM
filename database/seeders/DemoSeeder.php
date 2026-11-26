@@ -101,6 +101,18 @@ class DemoSeeder extends Seeder
                 \App\Modules\Caja\Models\Caja::firstOrCreate(['local_id' => $matriz, 'nombre' => $nombre]);
             }
 
+            // Stock inicial en la casa matriz: una recepción confirmada (entra por el kardex).
+            if ($matriz && ! \App\Modules\Inventario\Models\Recepcion::exists()) {
+                $costos = ['CEM-25' => [400, 3600], 'FIE-8' => [600, 2400], 'YES-15' => [150, 6300], 'PIN-1G' => [60, 8900], 'TOR-100' => [200, 1500]];
+                $inv = app(\App\Modules\Inventario\Recepciones::class);
+                $rec = $inv->guardar([
+                    'local_id' => $matriz, 'proveedor_nombre' => 'Distribuidora Ferretera del Sur', 'proveedor_rut' => '96.512.340-7', 'documento_proveedor' => 'Guía 4512',
+                    'observaciones' => 'Stock inicial de demostración',
+                    'lineas' => Producto::whereIn('sku', array_keys($costos))->get()->map(fn ($p) => ['producto_id' => $p->id, 'cantidad' => $costos[$p->sku][0], 'costo_unitario' => $costos[$p->sku][1]])->all(),
+                ], $admin);
+                $inv->confirmar($rec, $admin);
+            }
+
             Cliente::firstOrCreate(['rut' => '11111111-1'], ['razon_social' => 'Juan Pérez Soto', 'giro' => 'Particular', 'direccion' => 'Pasaje Uno 123', 'comuna' => 'Maipú', 'ciudad' => 'Santiago', 'lista_precio' => 'meson']);
         });
     }
