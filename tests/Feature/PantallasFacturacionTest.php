@@ -58,7 +58,9 @@ class PantallasFacturacionTest extends TestCase
             '/ventas/cotizaciones', '/ventas/cotizaciones/crear', '/caja/turno', '/caja/cierres',
             '/inventario/stock', '/inventario/recepciones', '/inventario/recepciones/crear', '/inventario/mermas', '/ventas/ordenes',
             '/inventario/precios', '/inventario/precios?vista=historial', '/inventario/precios/crear', '/inventario/despachos', '/inventario/devoluciones', '/inventario/devoluciones/crear', '/inventario/devoluciones/crear?folio=999',
-            '/configuracion/proveedores', '/compras/ordenes', '/compras/ordenes/crear', '/compras/facturas', '/compras/facturas/crear', '/finanzas/cuentas-por-pagar', '/finanzas/libro-de-compras', '/finanzas/libro-de-compras?mes=2026-01'] as $ruta) {
+            '/configuracion/proveedores', '/compras/ordenes', '/compras/ordenes/crear', '/compras/facturas', '/compras/facturas/crear', '/finanzas/cuentas-por-pagar', '/finanzas/libro-de-compras', '/finanzas/libro-de-compras?mes=2026-01',
+            '/finanzas/flujos-de-caja', '/finanzas/honorarios', '/finanzas/centros-de-costo', '/finanzas/asientos', '/finanzas/asientos/crear', '/finanzas/plan-de-cuentas', '/finanzas/conciliacion',
+            '/finanzas/balances', '/finanzas/balances?vista=resultados', '/finanzas/balances?vista=general', '/finanzas/balances?vista=mayor&cuenta_id=1'] as $ruta) {
             $this->entrar($u)->get($ruta)->assertOk();
         }
         $producto = app(Tenancy::class)->como($e, fn () => Producto::firstOrCreate(['sku' => 'K'], ['nombre' => 'Kardex', 'precio_neto' => '1000'])->id);

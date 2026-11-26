@@ -332,6 +332,7 @@ class Documentos
             $pago = Pago::create(['documento_id' => $doc->id, 'turno_id' => $turno?->id, 'monto' => $monto, 'metodo' => $metodo, 'fecha' => now()->toDateString(), 'referencia' => $referencia, 'registrado_por' => $user->id]);
             $saldo = $doc->saldo - $monto;
             $doc->forceFill(['saldo' => $saldo, 'estado' => $saldo === 0 ? 'pagado' : 'emitido'])->save();
+            app(\App\Modules\Finanzas\AsientosAutomaticos::class)->pagoCliente($pago->setRelation('documento', $doc), $user);
 
             return $pago;
         });

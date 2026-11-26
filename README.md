@@ -16,6 +16,7 @@ El desarrollo avanza por fases, cada una en su propio pull request:
 | 3a | Inventario: kardex con costo promedio ponderado (en la base de datos), stock por local, recepción de mercadería, mermas con aprobación; órdenes de venta que reservan stock; la emisión descuenta stock y la NC lo repone |
 | 3b | Actualización de precios con historial (trigger) y aprobación; despachos con máquina de estados en la base de datos, firma de recepción y transportista simulado; devoluciones que emiten la NC y reingresan stock |
 | 3c | Compras: proveedores, órdenes de compra con comparación de cotizaciones y aprobación por monto, recepción contra OC, facturas de proveedor con 3-way match (OC × recepción × factura), cuentas por pagar con antigüedad, calendario y pagos con segunda aprobación, libro de compras |
+| 3d | Finanzas: plan de cuentas y libro diario con partida doble validada en la base de datos (asientos inmutables, se revierten), asientos automáticos desde ventas, cobros, compras, pagos y honorarios; balance de comprobación, estado de resultados, balance general y libro mayor; centros de costo; conciliación bancaria con importación de cartolas CSV y calce automático; libro de honorarios con retención; flujo de caja proyectado a 30/60/90 días |
 | 3 | Resto de módulos (RRHH, contabilidad y tesorería, contact center) |
 | 4 | Integraciones reales (SII, PBX, Meta) detrás de interfaces |
 
