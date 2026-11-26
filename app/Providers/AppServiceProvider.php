@@ -49,6 +49,7 @@ class AppServiceProvider extends ServiceProvider
         Event::subscribe(EventosAutenticacion::class);
         // Eventos de dominio entre módulos (síncronos, dentro de la transacción que los origina).
         Event::listen(\App\Modules\Facturacion\Eventos\DocumentoEmitido::class, \App\Modules\Inventario\Escuchas\MoverStockAlEmitir::class);
+        Event::listen(\App\Modules\Facturacion\Eventos\DocumentoEmitido::class, \App\Modules\Finanzas\Escuchas\ContabilizarDocumento::class);
 
         RateLimiter::for('api-token', function (Request $request) {
             $token = $request->user()?->currentAccessToken();

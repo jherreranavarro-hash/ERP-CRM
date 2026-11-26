@@ -94,6 +94,7 @@ class FacturasProveedor
             }
             if ($estado === 'por_pagar') {
                 $this->facturarLineas($f);
+                app(\App\Modules\Finanzas\AsientosAutomaticos::class)->facturaProveedor($f->setRelation('proveedor', $proveedor), $user);
             }
             $this->auditoria->registrar('factura_proveedor.registrar', $f, null, ['factura' => $f->nombre(), 'proveedor' => $proveedor->razon_social, 'total' => $total, 'estado' => $estado]);
 
@@ -111,6 +112,7 @@ class FacturasProveedor
             }
             $f->forceFill(['estado' => 'por_pagar', 'aprobado_por' => $user->id])->save();
             $this->facturarLineas($f);
+            app(\App\Modules\Finanzas\AsientosAutomaticos::class)->facturaProveedor($f, $user);
             $this->auditoria->registrar('factura_proveedor.aprobar', $f, null, ['factura' => $f->nombre(), 'diferencias' => $f->diferencias]);
 
             return $f;

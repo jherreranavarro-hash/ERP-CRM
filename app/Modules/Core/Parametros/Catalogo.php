@@ -239,6 +239,7 @@ class Catalogo
                 'piso' => 'Redondeo mitad hacia arriba en pesos enteros, inmutabilidad del emitido y folio solo al emitir no son configurables.',
                 'parametros' => [
                     'tributario.tasa_iva' => ['etiqueta' => 'Tasa de IVA', 'tipo' => 'porcentaje', 'inicial' => 19, 'min' => 0, 'max' => 100, 'unidad' => '%', 'alcances' => self::G],
+                    'tributario.retencion_honorarios_pct' => ['etiqueta' => 'Retención de boletas de honorarios', 'tipo' => 'porcentaje', 'inicial' => 15.25, 'min' => 0, 'max' => 30, 'unidad' => '%', 'alcances' => self::G],
                     'tributario.tipos_dte' => ['etiqueta' => 'Tipos DTE habilitados', 'tipo' => 'multiple', 'opciones' => ['33', '34', '39', '41', '52', '56', '61'], 'inicial' => ['33', '34', '39', '41', '52', '56', '61'], 'alcances' => self::GE],
                     'tributario.rut_generico' => ['etiqueta' => 'RUT genérico bloqueado en factura', 'tipo' => 'texto', 'inicial' => '66666666-6', 'alcances' => self::G],
                     'tributario.precio_boleta' => ['etiqueta' => 'Precio de boleta', 'tipo' => 'opcion', 'opciones' => ['derivado', 'manual'], 'inicial' => 'derivado', 'alcances' => self::GE],
@@ -305,6 +306,15 @@ class Catalogo
                     'inventario.reserva_dias' => ['etiqueta' => 'Días de reserva de una orden de venta', 'tipo' => 'entero', 'inicial' => 7, 'min' => 1, 'max' => 60, 'unidad' => 'días', 'alcances' => self::GE],
                     'inventario.precio_variacion_pct' => ['etiqueta' => 'Variación de precio sin aprobación', 'tipo' => 'porcentaje', 'inicial' => 15, 'min' => 0, 'max' => 100, 'unidad' => '%', 'estricto' => 'menor', 'alcances' => self::GE],
                     'inventario.devolucion_aprobacion_monto' => ['etiqueta' => 'Devolución sin aprobación hasta', 'tipo' => 'entero', 'inicial' => 0, 'min' => 0, 'max' => 100000000, 'unidad' => '$', 'estricto' => 'menor', 'alcances' => self::GE],
+                ],
+            ],
+            'contabilidad' => [
+                'nombre' => 'Contabilidad y tesorería',
+                'grupo' => 'negocio', 'sensible' => true, 'edita' => 'Finanzas',
+                'piso' => 'Todo asiento cuadra (debe = haber) y no se edita ni se borra: se corrige con un reverso. Los balances salen de los asientos, nunca se digitan.',
+                'parametros' => [
+                    'contabilidad.cierre_hasta' => ['etiqueta' => 'Período cerrado hasta (AAAA-MM-DD)', 'tipo' => 'texto', 'inicial' => '', 'alcances' => self::GE],
+                    'conciliacion.dias_tolerancia' => ['etiqueta' => 'Días de diferencia tolerados al conciliar', 'tipo' => 'entero', 'inicial' => 3, 'min' => 0, 'max' => 15, 'unidad' => 'días', 'alcances' => self::GE],
                 ],
             ],
             'compras' => [

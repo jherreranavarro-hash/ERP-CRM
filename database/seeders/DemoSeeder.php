@@ -124,6 +124,21 @@ class DemoSeeder extends Seeder
                 $oc->enviar($orden, $admin);
             }
 
+            // Finanzas: plan de cuentas, un centro de costo por local, la cuenta corriente y el asiento de apertura.
+            $conta = app(\App\Modules\Finanzas\Contabilidad::class);
+            $conta->asegurarPlan();
+            foreach (Local::orderBy('codigo')->get() as $l) {
+                \App\Modules\Finanzas\Models\CentroCosto::firstOrCreate(['codigo' => $l->codigo], ['nombre' => $l->nombre, 'local_id' => $l->id]);
+            }
+            \App\Modules\Finanzas\Models\CuentaBancaria::firstOrCreate(['banco' => 'Banco de Chile', 'numero' => '00-123-45678-09'], ['nombre' => 'Cuenta corriente principal', 'cuenta_contable_id' => $conta->cuenta('banco')->id]);
+            if (! \App\Modules\Finanzas\Models\Asiento::where('tipo', 'manual')->exists()) {
+                $conta->registrar(now()->startOfYear()->toDateString(), 'Asiento de apertura', [
+                    ['cuenta_id' => $conta->cuenta('banco')->id, 'debe' => 25000000, 'haber' => 0],
+                    ['cuenta_id' => $conta->cuenta('caja')->id, 'debe' => 500000, 'haber' => 0],
+                    ['cuenta_id' => $conta->cuenta('capital')->id, 'debe' => 0, 'haber' => 25500000],
+                ], $admin);
+            }
+
             Cliente::firstOrCreate(['rut' => '11111111-1'], ['razon_social' => 'Juan Pérez Soto', 'giro' => 'Particular', 'direccion' => 'Pasaje Uno 123', 'comuna' => 'Maipú', 'ciudad' => 'Santiago', 'lista_precio' => 'meson']);
         });
     }

@@ -21,6 +21,12 @@ use App\Http\Controllers\Finanzas\CuentasPorCobrarController;
 use App\Http\Controllers\Finanzas\CuentasPorPagarController;
 use App\Http\Controllers\Finanzas\LibroComprasController;
 use App\Http\Controllers\Finanzas\LibroVentasController;
+use App\Http\Controllers\Finanzas\AsientosController;
+use App\Http\Controllers\Finanzas\BalancesController;
+use App\Http\Controllers\Finanzas\CentrosCostoController;
+use App\Http\Controllers\Finanzas\ConciliacionController;
+use App\Http\Controllers\Finanzas\FlujoCajaController;
+use App\Http\Controllers\Finanzas\HonorariosController;
 use App\Http\Controllers\Configuracion\AuditoriaController;
 use App\Http\Controllers\Configuracion\EmpresasController;
 use App\Http\Controllers\Configuracion\LocalesController;
@@ -260,4 +266,39 @@ Route::middleware('auth')->group(function () {
     Route::get('finanzas/libro-de-compras', [LibroComprasController::class, 'index'])->middleware('permiso:finanzas.libro-de-compras.ver')->name('finanzas.libro-compras');
     Route::get('finanzas/libro-de-ventas', [LibroVentasController::class, 'index'])->middleware('permiso:finanzas.libro-de-ventas.ver')->name('finanzas.libro-ventas');
     Route::get('finanzas/cuentas-por-cobrar', [CuentasPorCobrarController::class, 'index'])->middleware('permiso:finanzas.cuentas-por-cobrar.ver')->name('finanzas.cuentas-por-cobrar');
+
+    // Finanzas: tesorería, contabilidad y honorarios
+    Route::prefix('finanzas')->name('finanzas.')->group(function () {
+        Route::get('flujos-de-caja', [FlujoCajaController::class, 'index'])->middleware('permiso:finanzas.flujos-de-caja.ver')->name('flujo-caja');
+
+        Route::get('honorarios', [HonorariosController::class, 'index'])->middleware('permiso:finanzas.libro-de-honorarios.ver')->name('honorarios');
+        Route::post('honorarios', [HonorariosController::class, 'store'])->middleware('permiso:finanzas.libro-de-honorarios.crear')->name('honorarios.store');
+        Route::post('honorarios/{honorario}/pagar', [HonorariosController::class, 'pagar'])->middleware('permiso:finanzas.libro-de-honorarios.editar')->name('honorarios.pagar');
+        Route::post('honorarios/{honorario}/anular', [HonorariosController::class, 'anular'])->middleware('permiso:finanzas.libro-de-honorarios.eliminar')->name('honorarios.anular');
+
+        Route::get('centros-de-costo', [CentrosCostoController::class, 'index'])->middleware('permiso:finanzas.centro-de-costos.ver')->name('centros');
+        Route::post('centros-de-costo', [CentrosCostoController::class, 'store'])->middleware('permiso:finanzas.centro-de-costos.crear')->name('centros.store');
+        Route::put('centros-de-costo/{centro}', [CentrosCostoController::class, 'update'])->middleware('permiso:finanzas.centro-de-costos.editar')->name('centros.update');
+
+        Route::get('asientos', [AsientosController::class, 'index'])->middleware('permiso:finanzas.asientos-contables.ver')->name('asientos.index');
+        Route::get('asientos/crear', [AsientosController::class, 'create'])->middleware('permiso:finanzas.asientos-contables.crear')->name('asientos.create');
+        Route::post('asientos', [AsientosController::class, 'store'])->middleware('permiso:finanzas.asientos-contables.crear')->name('asientos.store');
+        Route::get('asientos/{asiento}', [AsientosController::class, 'show'])->middleware('permiso:finanzas.asientos-contables.ver')->name('asientos.show');
+        Route::post('asientos/{asiento}/revertir', [AsientosController::class, 'revertir'])->middleware('permiso:finanzas.asientos-contables.eliminar')->name('asientos.revertir');
+        Route::get('plan-de-cuentas', [AsientosController::class, 'plan'])->middleware('permiso:finanzas.asientos-contables.ver')->name('plan');
+        Route::post('plan-de-cuentas', [AsientosController::class, 'guardarCuenta'])->middleware('permiso:finanzas.asientos-contables.editar')->name('plan.store');
+        Route::put('plan-de-cuentas/{cuenta}', [AsientosController::class, 'guardarCuenta'])->middleware('permiso:finanzas.asientos-contables.editar')->name('plan.update');
+
+        Route::get('balances', [BalancesController::class, 'index'])->middleware('permiso:finanzas.balances-y-reportes.ver')->name('balances');
+
+        Route::get('conciliacion', [ConciliacionController::class, 'index'])->middleware('permiso:finanzas.conciliacion-bancaria.ver')->name('conciliacion');
+        Route::post('conciliacion/cuentas', [ConciliacionController::class, 'guardarCuenta'])->middleware('permiso:finanzas.conciliacion-bancaria.crear')->name('conciliacion.cuentas');
+        Route::post('conciliacion/{cuenta}/importar', [ConciliacionController::class, 'importar'])->middleware('permiso:finanzas.conciliacion-bancaria.crear')->name('conciliacion.importar');
+        Route::post('conciliacion/{cuenta}/automatico', [ConciliacionController::class, 'automatico'])->middleware('permiso:finanzas.conciliacion-bancaria.editar')->name('conciliacion.automatico');
+        Route::get('conciliacion/movimientos/{movimiento}/candidatos', [ConciliacionController::class, 'candidatos'])->middleware('permiso:finanzas.conciliacion-bancaria.editar')->name('conciliacion.candidatos');
+        Route::post('conciliacion/movimientos/{movimiento}/conciliar', [ConciliacionController::class, 'conciliar'])->middleware('permiso:finanzas.conciliacion-bancaria.editar')->name('conciliacion.conciliar');
+        Route::post('conciliacion/movimientos/{movimiento}/contabilizar', [ConciliacionController::class, 'contabilizar'])->middleware('permiso:finanzas.conciliacion-bancaria.editar')->name('conciliacion.contabilizar');
+        Route::post('conciliacion/movimientos/{movimiento}/ignorar', [ConciliacionController::class, 'ignorar'])->middleware('permiso:finanzas.conciliacion-bancaria.editar')->name('conciliacion.ignorar');
+        Route::post('conciliacion/movimientos/{movimiento}/deshacer', [ConciliacionController::class, 'deshacer'])->middleware('permiso:finanzas.conciliacion-bancaria.editar')->name('conciliacion.deshacer');
+    });
 });

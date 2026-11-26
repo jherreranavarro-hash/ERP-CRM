@@ -45,7 +45,7 @@ class PagosProveedor
                 'aprobado_at' => $monto > $limite ? null : now(),
             ]);
             if ($pago->estado === 'aplicado') {
-                $this->aplicar($f, $pago);
+                $this->aplicar($f, $pago, $user);
             }
             $this->auditoria->registrar('pago_proveedor.registrar', $pago, null, ['factura' => $f->nombre(), 'monto' => $monto, 'estado' => $pago->estado]);
 
@@ -62,7 +62,7 @@ class PagosProveedor
                 throw ValidationException::withMessages(['pago' => 'El saldo de la factura ya no admite este pago: recházalo.']);
             }
             $p->forceFill(['estado' => 'aplicado', 'aprobado_por' => $user->id, 'aprobado_at' => now()])->save();
-            $this->aplicar($f, $p);
+            $this->aplicar($f, $p, $user);
             $this->auditoria->registrar('pago_proveedor.aprobar', $p, null, ['factura' => $f->nombre(), 'monto' => $p->monto]);
 
             return $p;
@@ -79,10 +79,11 @@ class PagosProveedor
         });
     }
 
-    private function aplicar(FacturaProveedor $f, PagoProveedor $p): void
+    private function aplicar(FacturaProveedor $f, PagoProveedor $p, User $user): void
     {
         $saldo = $f->saldo - $p->monto;
         $f->forceFill(['saldo' => $saldo, 'estado' => $saldo === 0 ? 'pagada' : 'por_pagar'])->save();
+        app(\App\Modules\Finanzas\AsientosAutomaticos::class)->pagoProveedor($p->setRelation('factura', $f), $user);
     }
 
     private function porAprobar(PagoProveedor $pago, User $user, string $verbo): PagoProveedor
