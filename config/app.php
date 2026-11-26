@@ -97,6 +97,9 @@ return [
 
     'cipher' => 'AES-256-CBC',
 
+    // Clave para firmar la exportación de configuración entre ambientes (igual en dev, staging y producción).
+    'config_export_key' => env('CONFIG_EXPORT_KEY'),
+
     'key' => env('APP_KEY'),
 
     'previous_keys' => [

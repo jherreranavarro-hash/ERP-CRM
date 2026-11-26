@@ -2,23 +2,51 @@
 
 namespace App\Providers;
 
+use App\Models\User;
+use App\Modules\Auth\Captcha\CaptchaAritmetico;
+use App\Modules\Auth\Captcha\VerificadorCaptcha;
+use App\Modules\Auth\EventosAutenticacion;
+use App\Modules\Core\Auditoria\Auditoria;
+use App\Modules\Core\Models\TokenAcceso;
+use App\Modules\Core\Parametros\Parametros;
+use App\Modules\Core\Rbac\Rbac;
+use App\Modules\Core\Tenancy\Tenancy;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Sanctum\Sanctum;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
-        //
+        // Estado por petición (o por job): se recrean en cada ciclo.
+        $this->app->scoped(Tenancy::class);
+        $this->app->scoped(Rbac::class);
+        $this->app->scoped(Parametros::class);
+        $this->app->singleton(Auditoria::class);
+        $this->app->bind(VerificadorCaptcha::class, CaptchaAritmetico::class);
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
-        //
+        Model::shouldBeStrict(! $this->app->isProduction());
+        Sanctum::usePersonalAccessTokenModel(TokenAcceso::class);
+
+        // Los permisos se verifican en el backend: Gate y @can delegan en el RBAC.
+        Gate::before(fn (User $user, string $ability) => str_contains($ability, '.') ? $user->tienePermiso($ability) : null);
+
+        Event::subscribe(EventosAutenticacion::class);
+
+        RateLimiter::for('api-token', function (Request $request) {
+            $token = $request->user()?->currentAccessToken();
+            $limite = $token?->limite_por_minuto ?: (int) app(Parametros::class)->valor('api.solicitudes_por_minuto');
+
+            return Limit::perMinute($limite)->by('token:'.($token?->id ?? $request->ip()));
+        });
     }
 }
