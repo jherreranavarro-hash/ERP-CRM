@@ -5,7 +5,10 @@ use App\Http\Controllers\Caja\DocumentosController;
 use App\Http\Controllers\Caja\TurnoController;
 use App\Http\Controllers\Ventas\CotizacionesController;
 use App\Http\Controllers\Ventas\OrdenesController;
+use App\Http\Controllers\Inventario\DespachosController;
+use App\Http\Controllers\Inventario\DevolucionesController;
 use App\Http\Controllers\Inventario\MermasController;
+use App\Http\Controllers\Inventario\PreciosController;
 use App\Http\Controllers\Inventario\RecepcionesController;
 use App\Http\Controllers\Inventario\StockController;
 use App\Http\Controllers\Configuracion\ClientesController;
@@ -83,6 +86,7 @@ Route::middleware('auth')->group(function () {
         Route::post('parametros/cambios/{cambio}/rechazar', [ParametrosController::class, 'rechazar'])->middleware('permiso:configuracion.parametros.aprobar')->name('parametros.rechazar');
         Route::post('parametros/cambios/{cambio}/revertir', [ParametrosController::class, 'revertir'])->middleware('permiso:configuracion.parametros.proponer')->name('parametros.revertir');
         Route::get('parametros/{mantenedor}', [ParametrosController::class, 'show'])->middleware('permiso:configuracion.parametros.ver')->name('parametros.show');
+        Route::get('despacho', fn () => to_route('configuracion.parametros.show', 'despacho'))->middleware('permiso:configuracion.parametros-de-despacho.ver')->name('despacho');
 
         // Tracking de actividades (trazabilidad)
         Route::get('auditoria', [AuditoriaController::class, 'index'])->middleware('permiso:configuracion.tracking-de-actividades.ver')->name('auditoria.index');
@@ -113,7 +117,7 @@ Route::middleware('auth')->group(function () {
 
     // Búsquedas para formularios
     Route::get('buscar/clientes', [ClientesController::class, 'buscar'])->middleware('permiso:caja.facturas-de-ventas.crear|ventascrm.cotizacion.crear')->name('buscar.clientes');
-    Route::get('buscar/productos', [ProductosController::class, 'buscar'])->middleware('permiso:caja.facturas-de-ventas.crear|ventascrm.cotizacion.crear|inventario.recepcion-de-mercaderia.crear|inventario.mermas.crear')->name('buscar.productos');
+    Route::get('buscar/productos', [ProductosController::class, 'buscar'])->middleware('permiso:caja.facturas-de-ventas.crear|ventascrm.cotizacion.crear|inventario.recepcion-de-mercaderia.crear|inventario.mermas.crear|inventario.actualizacion-de-precios.crear')->name('buscar.productos');
 
     // Caja → Facturas de Ventas
     Route::prefix('caja/documentos')->name('caja.documentos.')->group(function () {
@@ -186,6 +190,33 @@ Route::middleware('auth')->group(function () {
         Route::post('mermas', [MermasController::class, 'store'])->middleware('permiso:inventario.mermas.crear')->name('mermas.store');
         Route::post('mermas/{merma}/aprobar', [MermasController::class, 'aprobar'])->middleware('permiso:inventario.mermas.aprobar')->name('mermas.aprobar');
         Route::post('mermas/{merma}/rechazar', [MermasController::class, 'rechazar'])->middleware('permiso:inventario.mermas.aprobar')->name('mermas.rechazar');
+
+        Route::get('precios', [PreciosController::class, 'index'])->middleware('permiso:inventario.actualizacion-de-precios.ver')->name('precios.index');
+        Route::get('precios/crear', [PreciosController::class, 'create'])->middleware('permiso:inventario.actualizacion-de-precios.crear')->name('precios.create');
+        Route::post('precios', [PreciosController::class, 'store'])->middleware('permiso:inventario.actualizacion-de-precios.crear')->name('precios.store');
+        Route::post('precios/masivo', [PreciosController::class, 'masivo'])->middleware('permiso:inventario.actualizacion-de-precios.crear')->name('precios.masivo');
+        Route::get('precios/{cambio}', [PreciosController::class, 'show'])->middleware('permiso:inventario.actualizacion-de-precios.ver')->name('precios.show');
+        Route::post('precios/{cambio}/aprobar', [PreciosController::class, 'aprobar'])->middleware('permiso:inventario.actualizacion-de-precios.aprobar')->name('precios.aprobar');
+        Route::post('precios/{cambio}/rechazar', [PreciosController::class, 'rechazar'])->middleware('permiso:inventario.actualizacion-de-precios.aprobar')->name('precios.rechazar');
+
+        Route::get('despachos', [DespachosController::class, 'index'])->middleware('permiso:inventario.despachos.ver')->name('despachos.index');
+        Route::get('despachos/crear', [DespachosController::class, 'create'])->middleware('permiso:inventario.despachos.crear')->name('despachos.create');
+        Route::post('despachos', [DespachosController::class, 'store'])->middleware('permiso:inventario.despachos.crear')->name('despachos.store');
+        Route::get('despachos/{despacho}', [DespachosController::class, 'show'])->middleware('permiso:inventario.despachos.ver')->name('despachos.show');
+        Route::get('despachos/{despacho}/firma', [DespachosController::class, 'firma'])->middleware('permiso:inventario.despachos.ver')->name('despachos.firma');
+        Route::post('despachos/{despacho}/aprobar', [DespachosController::class, 'aprobar'])->middleware('permiso:inventario.despachos.aprobar')->name('despachos.aprobar');
+        Route::post('despachos/{despacho}/despachar', [DespachosController::class, 'despachar'])->middleware('permiso:inventario.despachos.editar')->name('despachos.despachar');
+        Route::post('despachos/{despacho}/entregar', [DespachosController::class, 'entregar'])->middleware('permiso:inventario.despachos.editar')->name('despachos.entregar');
+        Route::post('despachos/{despacho}/fallar', [DespachosController::class, 'fallar'])->middleware('permiso:inventario.despachos.editar')->name('despachos.fallar');
+        Route::post('despachos/{despacho}/reprogramar', [DespachosController::class, 'reprogramar'])->middleware('permiso:inventario.despachos.editar')->name('despachos.reprogramar');
+        Route::post('despachos/{despacho}/anular', [DespachosController::class, 'anular'])->middleware('permiso:inventario.despachos.eliminar')->name('despachos.anular');
+
+        Route::get('devoluciones', [DevolucionesController::class, 'index'])->middleware('permiso:inventario.devolucion.ver|caja.devolucion.ver')->name('devoluciones.index');
+        Route::get('devoluciones/crear', [DevolucionesController::class, 'create'])->middleware('permiso:inventario.devolucion.crear|caja.devolucion.crear')->name('devoluciones.create');
+        Route::post('devoluciones', [DevolucionesController::class, 'store'])->middleware('permiso:inventario.devolucion.crear|caja.devolucion.crear')->name('devoluciones.store');
+        Route::get('devoluciones/{devolucion}', [DevolucionesController::class, 'show'])->middleware('permiso:inventario.devolucion.ver|caja.devolucion.ver')->name('devoluciones.show');
+        Route::post('devoluciones/{devolucion}/aprobar', [DevolucionesController::class, 'aprobar'])->middleware('permiso:inventario.devolucion.aprobar|caja.devolucion.aprobar')->name('devoluciones.aprobar');
+        Route::post('devoluciones/{devolucion}/rechazar', [DevolucionesController::class, 'rechazar'])->middleware('permiso:inventario.devolucion.aprobar|caja.devolucion.aprobar')->name('devoluciones.rechazar');
     });
 
     // Finanzas

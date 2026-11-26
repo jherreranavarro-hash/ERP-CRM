@@ -34,6 +34,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(VerificadorCaptcha::class, CaptchaAritmetico::class);
         // Proveedor DTE real pendiente de elección; mientras tanto, el simulado.
         $this->app->bind(ProveedorDTE::class, ProveedorDteSimulado::class);
+        // Transportistas externos: por ahora solo el simulado (integraciones reales en fase 4).
+        $this->app->singleton(\App\Modules\Inventario\Transporte\Transportistas::class, fn () => new \App\Modules\Inventario\Transporte\Transportistas([new \App\Modules\Inventario\Transporte\TransportistaSimulado]));
     }
 
     public function boot(): void

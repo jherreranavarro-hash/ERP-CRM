@@ -16,7 +16,7 @@ class MovimientoStock extends Model
 
     public const UPDATED_AT = null;
 
-    public const TIPOS = ['recepcion' => 'Recepción', 'venta' => 'Venta', 'anulacion_venta' => 'Anulación de venta', 'merma' => 'Merma', 'ajuste' => 'Ajuste'];
+    public const TIPOS = ['recepcion' => 'Recepción', 'venta' => 'Venta', 'anulacion_venta' => 'Anulación de venta', 'devolucion' => 'Devolución', 'merma' => 'Merma', 'ajuste' => 'Ajuste'];
 
     protected $table = 'movimientos_stock';
 

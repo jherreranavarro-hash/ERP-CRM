@@ -56,7 +56,8 @@ class PantallasFacturacionTest extends TestCase
 
         foreach (['/caja/documentos', '/caja/documentos/crear', '/configuracion/clientes', '/configuracion/productos', '/configuracion/folios', '/finanzas/libro-de-ventas', '/finanzas/cuentas-por-cobrar',
             '/ventas/cotizaciones', '/ventas/cotizaciones/crear', '/caja/turno', '/caja/cierres',
-            '/inventario/stock', '/inventario/recepciones', '/inventario/recepciones/crear', '/inventario/mermas', '/ventas/ordenes'] as $ruta) {
+            '/inventario/stock', '/inventario/recepciones', '/inventario/recepciones/crear', '/inventario/mermas', '/ventas/ordenes',
+            '/inventario/precios', '/inventario/precios?vista=historial', '/inventario/precios/crear', '/inventario/despachos', '/inventario/devoluciones', '/inventario/devoluciones/crear', '/inventario/devoluciones/crear?folio=999'] as $ruta) {
             $this->entrar($u)->get($ruta)->assertOk();
         }
         $producto = app(Tenancy::class)->como($e, fn () => Producto::firstOrCreate(['sku' => 'K'], ['nombre' => 'Kardex', 'precio_neto' => '1000'])->id);

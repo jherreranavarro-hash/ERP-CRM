@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Comercial\Models\Categoria;
 use App\Modules\Comercial\Models\Producto;
 use App\Modules\Core\Tenancy\Tenancy;
+use App\Modules\Inventario\Precios;
 use App\Support\Exportacion\Csv;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -49,11 +50,28 @@ class ProductosController extends Controller
         return back()->with('exito', 'Producto creado.');
     }
 
+    /** Los precios de venta pasan por Actualización de Precios: historial y aprobación si la variación es grande. */
     public function update(Request $request, Producto $producto)
     {
-        $producto->update($this->validar($request, $producto));
+        $d = $this->validar($request, $producto);
+        $precios = array_intersect_key($d, array_flip(['precio_neto', 'precio_mayorista']));
+        $producto->update(array_diff_key($d, $precios));
 
-        return back()->with('exito', 'Producto actualizado.');
+        $cambios = collect($precios)->map(fn ($v, $campo) => ['producto_id' => $producto->id, 'campo' => $campo, 'nuevo' => $v])
+            ->filter(fn ($c) => ! $this->mismoValor($producto->{$c['campo']}, $c['nuevo']))->values()->all();
+        if (! $cambios) {
+            return back()->with('exito', 'Producto actualizado.');
+        }
+        $cambio = app(Precios::class)->proponer($cambios, "Ficha de {$producto->sku}", $request->user());
+
+        return back()->with('exito', $cambio->estado === 'aplicado'
+            ? 'Producto actualizado. El cambio de precio quedó en el historial.'
+            : "Producto actualizado. El cambio de precio (solicitud N° {$cambio->numero}) espera aprobación: ".implode('; ', $cambio->motivos ?? []).'.');
+    }
+
+    private function mismoValor(mixed $a, mixed $b): bool
+    {
+        return ($a === null || $a === '') ? ($b === null || $b === '') : ($b !== null && $b !== '' && \Brick\Math\BigDecimal::of((string) $a)->isEqualTo((string) $b));
     }
 
     public function destroy(Producto $producto)
