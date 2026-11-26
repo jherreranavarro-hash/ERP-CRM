@@ -11,10 +11,15 @@ use App\Http\Controllers\Inventario\MermasController;
 use App\Http\Controllers\Inventario\PreciosController;
 use App\Http\Controllers\Inventario\RecepcionesController;
 use App\Http\Controllers\Inventario\StockController;
+use App\Http\Controllers\Compras\FacturasProveedorController;
+use App\Http\Controllers\Compras\OrdenesCompraController;
 use App\Http\Controllers\Configuracion\ClientesController;
+use App\Http\Controllers\Configuracion\ProveedoresController;
 use App\Http\Controllers\Configuracion\FoliosController;
 use App\Http\Controllers\Configuracion\ProductosController;
 use App\Http\Controllers\Finanzas\CuentasPorCobrarController;
+use App\Http\Controllers\Finanzas\CuentasPorPagarController;
+use App\Http\Controllers\Finanzas\LibroComprasController;
 use App\Http\Controllers\Finanzas\LibroVentasController;
 use App\Http\Controllers\Configuracion\AuditoriaController;
 use App\Http\Controllers\Configuracion\EmpresasController;
@@ -101,6 +106,10 @@ Route::middleware('auth')->group(function () {
         Route::post('clientes', [ClientesController::class, 'store'])->middleware('permiso:configuracion.clientes.crear')->name('clientes.store');
         Route::put('clientes/{cliente}', [ClientesController::class, 'update'])->middleware('permiso:configuracion.clientes.editar')->name('clientes.update');
         Route::delete('clientes/{cliente}', [ClientesController::class, 'destroy'])->middleware('permiso:configuracion.clientes.eliminar')->name('clientes.destroy');
+        Route::get('proveedores', [ProveedoresController::class, 'index'])->middleware('permiso:configuracion.proveedores.ver')->name('proveedores.index');
+        Route::post('proveedores', [ProveedoresController::class, 'store'])->middleware('permiso:configuracion.proveedores.crear')->name('proveedores.store');
+        Route::put('proveedores/{proveedor}', [ProveedoresController::class, 'update'])->middleware('permiso:configuracion.proveedores.editar')->name('proveedores.update');
+        Route::delete('proveedores/{proveedor}', [ProveedoresController::class, 'destroy'])->middleware('permiso:configuracion.proveedores.eliminar')->name('proveedores.destroy');
 
         // Productos y categorías
         Route::get('productos', [ProductosController::class, 'index'])->middleware('permiso:configuracion.producto.ver')->name('productos.index');
@@ -116,8 +125,9 @@ Route::middleware('auth')->group(function () {
     });
 
     // Búsquedas para formularios
+    Route::get('buscar/proveedores', [ProveedoresController::class, 'buscar'])->middleware('permiso:compras.orden-de-compra.crear|compras.factura-de-proveedores.crear')->name('buscar.proveedores');
     Route::get('buscar/clientes', [ClientesController::class, 'buscar'])->middleware('permiso:caja.facturas-de-ventas.crear|ventascrm.cotizacion.crear')->name('buscar.clientes');
-    Route::get('buscar/productos', [ProductosController::class, 'buscar'])->middleware('permiso:caja.facturas-de-ventas.crear|ventascrm.cotizacion.crear|inventario.recepcion-de-mercaderia.crear|inventario.mermas.crear|inventario.actualizacion-de-precios.crear')->name('buscar.productos');
+    Route::get('buscar/productos', [ProductosController::class, 'buscar'])->middleware('permiso:caja.facturas-de-ventas.crear|ventascrm.cotizacion.crear|inventario.recepcion-de-mercaderia.crear|inventario.mermas.crear|inventario.actualizacion-de-precios.crear|compras.orden-de-compra.crear')->name('buscar.productos');
 
     // Caja → Facturas de Ventas
     Route::prefix('caja/documentos')->name('caja.documentos.')->group(function () {
@@ -219,7 +229,35 @@ Route::middleware('auth')->group(function () {
         Route::post('devoluciones/{devolucion}/rechazar', [DevolucionesController::class, 'rechazar'])->middleware('permiso:inventario.devolucion.aprobar|caja.devolucion.aprobar')->name('devoluciones.rechazar');
     });
 
+    // Compras
+    Route::prefix('compras')->name('compras.')->group(function () {
+        Route::get('ordenes', [OrdenesCompraController::class, 'index'])->middleware('permiso:compras.orden-de-compra.ver')->name('ordenes.index');
+        Route::get('ordenes/crear', [OrdenesCompraController::class, 'create'])->middleware('permiso:compras.orden-de-compra.crear')->name('ordenes.create');
+        Route::post('ordenes', [OrdenesCompraController::class, 'store'])->middleware('permiso:compras.orden-de-compra.crear')->name('ordenes.store');
+        Route::get('ordenes/{orden}', [OrdenesCompraController::class, 'show'])->middleware('permiso:compras.orden-de-compra.ver')->name('ordenes.show');
+        Route::get('ordenes/{orden}/editar', [OrdenesCompraController::class, 'edit'])->middleware('permiso:compras.orden-de-compra.editar')->name('ordenes.edit');
+        Route::put('ordenes/{orden}', [OrdenesCompraController::class, 'update'])->middleware('permiso:compras.orden-de-compra.editar')->name('ordenes.update');
+        Route::delete('ordenes/{orden}', [OrdenesCompraController::class, 'destroy'])->middleware('permiso:compras.orden-de-compra.eliminar')->name('ordenes.destroy');
+        Route::post('ordenes/{orden}/enviar', [OrdenesCompraController::class, 'enviar'])->middleware('permiso:compras.orden-de-compra.editar')->name('ordenes.enviar');
+        Route::post('ordenes/{orden}/aprobar', [OrdenesCompraController::class, 'aprobar'])->middleware('permiso:compras.orden-de-compra.aprobar')->name('ordenes.aprobar');
+        Route::post('ordenes/{orden}/rechazar', [OrdenesCompraController::class, 'rechazar'])->middleware('permiso:compras.orden-de-compra.aprobar')->name('ordenes.rechazar');
+        Route::post('ordenes/{orden}/anular', [OrdenesCompraController::class, 'anular'])->middleware('permiso:compras.orden-de-compra.eliminar')->name('ordenes.anular');
+        Route::post('ordenes/{orden}/cerrar', [OrdenesCompraController::class, 'cerrar'])->middleware('permiso:compras.orden-de-compra.editar')->name('ordenes.cerrar');
+
+        Route::get('facturas', [FacturasProveedorController::class, 'index'])->middleware('permiso:compras.factura-de-proveedores.ver')->name('facturas.index');
+        Route::get('facturas/crear', [FacturasProveedorController::class, 'create'])->middleware('permiso:compras.factura-de-proveedores.crear')->name('facturas.create');
+        Route::post('facturas', [FacturasProveedorController::class, 'store'])->middleware('permiso:compras.factura-de-proveedores.crear')->name('facturas.store');
+        Route::get('facturas/{factura}', [FacturasProveedorController::class, 'show'])->middleware('permiso:compras.factura-de-proveedores.ver|finanzas.cuentas-por-pagar.ver')->name('facturas.show');
+        Route::post('facturas/{factura}/aprobar', [FacturasProveedorController::class, 'aprobar'])->middleware('permiso:compras.factura-de-proveedores.aprobar')->name('facturas.aprobar');
+        Route::post('facturas/{factura}/rechazar', [FacturasProveedorController::class, 'rechazar'])->middleware('permiso:compras.factura-de-proveedores.aprobar')->name('facturas.rechazar');
+    });
+
     // Finanzas
+    Route::get('finanzas/cuentas-por-pagar', [CuentasPorPagarController::class, 'index'])->middleware('permiso:finanzas.cuentas-por-pagar.ver')->name('finanzas.cuentas-por-pagar');
+    Route::post('finanzas/cuentas-por-pagar/{factura}/pagos', [CuentasPorPagarController::class, 'pagar'])->middleware('permiso:finanzas.cuentas-por-pagar.crear')->name('finanzas.pagos.store');
+    Route::post('finanzas/pagos-proveedor/{pago}/aprobar', [CuentasPorPagarController::class, 'aprobarPago'])->middleware('permiso:finanzas.cuentas-por-pagar.aprobar')->name('finanzas.pagos.aprobar');
+    Route::post('finanzas/pagos-proveedor/{pago}/rechazar', [CuentasPorPagarController::class, 'rechazarPago'])->middleware('permiso:finanzas.cuentas-por-pagar.aprobar')->name('finanzas.pagos.rechazar');
+    Route::get('finanzas/libro-de-compras', [LibroComprasController::class, 'index'])->middleware('permiso:finanzas.libro-de-compras.ver')->name('finanzas.libro-compras');
     Route::get('finanzas/libro-de-ventas', [LibroVentasController::class, 'index'])->middleware('permiso:finanzas.libro-de-ventas.ver')->name('finanzas.libro-ventas');
     Route::get('finanzas/cuentas-por-cobrar', [CuentasPorCobrarController::class, 'index'])->middleware('permiso:finanzas.cuentas-por-cobrar.ver')->name('finanzas.cuentas-por-cobrar');
 });

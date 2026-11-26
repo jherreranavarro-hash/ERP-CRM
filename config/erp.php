@@ -50,11 +50,11 @@ return [
             'icono' => 'finanzas',
             'submodulos' => [
                 'cuentas-por-cobrar' => ['nombre' => 'Cuentas por Cobrar', 'grupo' => 'Tesorería y Banco', 'acciones' => $crud, 'fase' => 2, 'ruta' => 'finanzas.cuentas-por-cobrar'],
-                'cuentas-por-pagar' => ['nombre' => 'Cuentas por Pagar', 'grupo' => 'Tesorería y Banco', 'acciones' => [...$crud, 'aprobar'], 'fase' => 3],
+                'cuentas-por-pagar' => ['nombre' => 'Cuentas por Pagar', 'grupo' => 'Tesorería y Banco', 'acciones' => [...$crud, 'aprobar'], 'fase' => 3, 'ruta' => 'finanzas.cuentas-por-pagar'],
                 'flujos-de-caja' => ['nombre' => 'Flujos de Caja', 'grupo' => 'Tesorería y Banco', 'acciones' => ['ver', 'exportar'], 'fase' => 3],
                 'conciliacion-bancaria' => ['nombre' => 'Conciliación Bancaria', 'grupo' => 'Tesorería y Banco', 'acciones' => $crud, 'fase' => 3],
                 'libro-de-ventas' => ['nombre' => 'Libro de Ventas', 'grupo' => 'Libros Tributarios', 'acciones' => ['ver', 'exportar'], 'fase' => 2, 'ruta' => 'finanzas.libro-ventas'],
-                'libro-de-compras' => ['nombre' => 'Libro de Compras', 'grupo' => 'Libros Tributarios', 'acciones' => ['ver', 'exportar'], 'fase' => 3],
+                'libro-de-compras' => ['nombre' => 'Libro de Compras', 'grupo' => 'Libros Tributarios', 'acciones' => ['ver', 'exportar'], 'fase' => 3, 'ruta' => 'finanzas.libro-compras'],
                 'libro-de-honorarios' => ['nombre' => 'Libro de Honorarios', 'grupo' => 'Libros Tributarios', 'acciones' => ['ver', 'exportar'], 'fase' => 3],
                 'asientos-contables' => ['nombre' => 'Asientos Contables', 'grupo' => 'Contabilidad', 'acciones' => $crud, 'fase' => 3],
                 'balances-y-reportes' => ['nombre' => 'Balances y Reportes', 'grupo' => 'Contabilidad', 'acciones' => ['ver', 'exportar'], 'fase' => 3],
@@ -86,8 +86,8 @@ return [
             'nombre' => 'Compras',
             'icono' => 'compras',
             'submodulos' => [
-                'orden-de-compra' => ['nombre' => 'Orden de Compra', 'acciones' => [...$crud, 'aprobar'], 'fase' => 3],
-                'factura-de-proveedores' => ['nombre' => 'Factura de Proveedores', 'acciones' => $crud, 'fase' => 3],
+                'orden-de-compra' => ['nombre' => 'Orden de Compra', 'acciones' => [...$crud, 'aprobar'], 'fase' => 3, 'ruta' => 'compras.ordenes.index'],
+                'factura-de-proveedores' => ['nombre' => 'Factura de Proveedores', 'acciones' => [...$crud, 'aprobar'], 'fase' => 3, 'ruta' => 'compras.facturas.index'],
             ],
         ],
 
@@ -149,7 +149,7 @@ return [
                 'producto' => ['nombre' => 'Producto', 'acciones' => $crud, 'fase' => 2, 'ruta' => 'configuracion.productos.index'],
                 'categoria' => ['nombre' => 'Categoría', 'acciones' => $crud, 'fase' => 2, 'ruta' => 'configuracion.productos.index'],
                 'descuentos' => ['nombre' => 'Descuentos', 'acciones' => $crud, 'fase' => 2],
-                'proveedores' => ['nombre' => 'Proveedores', 'acciones' => $crud, 'fase' => 3],
+                'proveedores' => ['nombre' => 'Proveedores', 'acciones' => $crud, 'fase' => 3, 'ruta' => 'configuracion.proveedores.index'],
                 'clientes' => ['nombre' => 'Clientes', 'acciones' => $crud, 'fase' => 2, 'ruta' => 'configuracion.clientes.index'],
                 'proveedor-ip' => ['nombre' => 'ProveedorIP', 'acciones' => $crud, 'fase' => 4],
                 'numero-entrante' => ['nombre' => 'NumeroEntrante', 'acciones' => $crud, 'fase' => 4],

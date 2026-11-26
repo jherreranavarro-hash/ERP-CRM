@@ -8,7 +8,7 @@ import { cantidad } from '@/lib/documentos';
 import { usePermisos } from '@/lib/permisos';
 
 interface Linea { producto_id: number; sku: string | null; nombre: string | null; unidad: string | null; cantidad: string; costo_unitario: string }
-interface Rec { id: number; numero: number; estado: string; fecha: string; local: string | null; proveedor_nombre: string; proveedor_rut: string | null; documento_proveedor: string | null; observaciones: string | null; costo_total: number; creador: string | null; confirmador: string | null; confirmado_at: string | null; lineas: Linea[] }
+interface Rec { oc: { id: number; numero: number } | null; id: number; numero: number; estado: string; fecha: string; local: string | null; proveedor_nombre: string; proveedor_rut: string | null; documento_proveedor: string | null; observaciones: string | null; costo_total: number; creador: string | null; confirmador: string | null; confirmado_at: string | null; lineas: Linea[] }
 const props = defineProps<{ recepcion: Rec }>();
 const puede = usePermisos();
 const page = usePage();
@@ -30,6 +30,7 @@ const eliminar = () => confirm('¿Eliminar este borrador?') && router.delete(`/i
 
     <div class="mb-6 flex flex-wrap gap-2">
         <Chip :tono="r.estado === 'confirmada' ? 'ok' : 'neutro'">{{ r.estado === 'confirmada' ? 'Confirmada' : 'Borrador' }}</Chip>
+        <Chip v-if="r.oc" tono="neutro"><Link :href="`/compras/ordenes/${r.oc.id}`" class="text-inherit">Orden de compra N° {{ r.oc.numero }}</Link></Chip>
         <Chip v-if="r.confirmado_at" tono="info">Confirmada por {{ r.confirmador }} el {{ fechaHora(r.confirmado_at) }}</Chip>
     </div>
 
@@ -47,7 +48,7 @@ const eliminar = () => confirm('¿Eliminar este borrador?') && router.delete(`/i
         <table class="tabla">
             <thead><tr><th>Producto</th><th class="text-right">Cantidad</th><th class="text-right">Costo unitario</th><th class="text-right">Subtotal</th></tr></thead>
             <tbody>
-                <tr v-for="l in r.lineas" :key="l.producto_id">
+                <tr v-for="(l, i) in r.lineas" :key="i">
                     <td><Link :href="`/inventario/stock/${l.producto_id}/kardex`" class="font-semibold">{{ l.nombre }}</Link><div class="num text-[13px] text-grafito">{{ l.sku }}</div></td>
                     <td class="num text-right">{{ cantidad(l.cantidad) }} {{ l.unidad }}</td>
                     <td class="num text-right">{{ pesos(Number(l.costo_unitario)) }}</td>

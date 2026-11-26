@@ -307,6 +307,19 @@ class Catalogo
                     'inventario.devolucion_aprobacion_monto' => ['etiqueta' => 'Devolución sin aprobación hasta', 'tipo' => 'entero', 'inicial' => 0, 'min' => 0, 'max' => 100000000, 'unidad' => '$', 'estricto' => 'menor', 'alcances' => self::GE],
                 ],
             ],
+            'compras' => [
+                'nombre' => 'Compras',
+                'grupo' => 'negocio', 'sensible' => false, 'edita' => 'Gerencia y Finanzas',
+                'piso' => 'Quien crea una orden de compra no la aprueba; una factura que no calza con la OC y la recepción no pasa a pago sin revisión.',
+                'parametros' => [
+                    'compras.oc_aprobacion_monto' => ['etiqueta' => 'Orden de compra sin aprobación hasta', 'tipo' => 'entero', 'inicial' => 500000, 'min' => 0, 'max' => 1000000000, 'unidad' => '$', 'estricto' => 'menor', 'alcances' => self::GE],
+                    'compras.cotizaciones_desde' => ['etiqueta' => 'Comparar cotizaciones desde (neto)', 'tipo' => 'entero', 'inicial' => 1000000, 'min' => 0, 'max' => 1000000000, 'unidad' => '$', 'estricto' => 'menor', 'alcances' => self::GE],
+                    'compras.cotizaciones_minimas' => ['etiqueta' => 'Cotizaciones mínimas a comparar', 'tipo' => 'entero', 'inicial' => 2, 'min' => 1, 'max' => 5, 'alcances' => self::GE],
+                    'compras.recepcion_tolerancia_pct' => ['etiqueta' => 'Recibir sobre lo pedido hasta', 'tipo' => 'porcentaje', 'inicial' => 0, 'min' => 0, 'max' => 20, 'unidad' => '%', 'estricto' => 'menor', 'alcances' => self::GE],
+                    'compras.match_tolerancia_pct' => ['etiqueta' => 'Diferencia de precio factura vs. OC tolerada', 'tipo' => 'porcentaje', 'inicial' => 2, 'min' => 0, 'max' => 20, 'unidad' => '%', 'estricto' => 'menor', 'alcances' => self::GE],
+                    'compras.cuadre_tolerancia_monto' => ['etiqueta' => 'Diferencia tolerada entre total declarado y líneas', 'tipo' => 'entero', 'inicial' => 10, 'min' => 0, 'max' => 10000, 'unidad' => '$', 'estricto' => 'menor', 'alcances' => self::GE],
+                ],
+            ],
             'despacho' => [
                 'nombre' => 'Parámetros de despacho',
                 'grupo' => 'negocio', 'sensible' => false, 'edita' => 'Logística',

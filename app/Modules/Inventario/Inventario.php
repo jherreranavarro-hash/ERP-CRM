@@ -106,6 +106,14 @@ class Inventario
         return $r;
     }
 
+    /** Decimal sin ceros sobrantes, como texto para formularios ("12.5", "0"). */
+    public static function dec(string|BigDecimal|null $v): string
+    {
+        $v = (string) ($v ?? '0');
+
+        return str_contains($v, '.') ? (rtrim(rtrim($v, '0'), '.') ?: '0') : $v;
+    }
+
     public static function cifra(string|BigDecimal $v): string
     {
         return rtrim(rtrim(number_format((float) (string) $v, 3, ',', '.'), '0'), ',');
