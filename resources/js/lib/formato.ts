@@ -18,6 +18,10 @@ export function numero(n: number | null | undefined): string {
 
 export function fecha(iso: string | null | undefined): string {
     if (!iso) return '—';
+    // Una fecha sin hora ("2026-11-26") es un día calendario: no se convierte de zona
+    // horaria (new Date la tomaría como medianoche UTC, que en Chile es el día anterior).
+    const dia = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+    if (dia) return `${dia[3]}-${dia[2]}-${dia[1]}`;
     return new Date(iso).toLocaleDateString('es-CL', { timeZone: zona, day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
