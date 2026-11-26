@@ -131,7 +131,7 @@ return [
             'submodulos' => [
                 'caja' => ['nombre' => 'Caja', 'acciones' => ['ver', 'crear', 'editar'], 'fase' => 2],
                 'cierres-de-caja' => ['nombre' => 'Cierres de Caja', 'acciones' => ['ver', 'crear', 'exportar', 'aprobar'], 'fase' => 2],
-                'facturas-de-ventas' => ['nombre' => 'Facturas de Ventas', 'acciones' => [...$crud, 'emitir', 'anular'], 'fase' => 2],
+                'facturas-de-ventas' => ['nombre' => 'Facturas de Ventas', 'acciones' => [...$crud, 'emitir', 'anular', 'aprobar'], 'fase' => 2],
                 'clientes' => ['nombre' => 'Clientes', 'acciones' => ['ver'], 'fase' => 2],
                 'stock' => ['nombre' => 'Stock', 'acciones' => ['ver'], 'fase' => 3],
                 'devolucion' => ['nombre' => 'Devolución', 'acciones' => ['ver', 'crear', 'aprobar'], 'fase' => 2],

@@ -5,6 +5,8 @@ namespace App\Providers;
 use App\Models\User;
 use App\Modules\Auth\Captcha\CaptchaAritmetico;
 use App\Modules\Auth\Captcha\VerificadorCaptcha;
+use App\Modules\Facturacion\Sii\ProveedorDTE;
+use App\Modules\Facturacion\Sii\ProveedorDteSimulado;
 use App\Modules\Auth\EventosAutenticacion;
 use App\Modules\Core\Auditoria\Auditoria;
 use App\Modules\Core\Models\TokenAcceso;
@@ -30,6 +32,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(Parametros::class);
         $this->app->singleton(Auditoria::class);
         $this->app->bind(VerificadorCaptcha::class, CaptchaAritmetico::class);
+        // Proveedor DTE real pendiente de elección; mientras tanto, el simulado.
+        $this->app->bind(ProveedorDTE::class, ProveedorDteSimulado::class);
     }
 
     public function boot(): void

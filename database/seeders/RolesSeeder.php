@@ -17,8 +17,8 @@ class RolesSeeder extends Seeder
             ['Gerente', 'gerencia', ['dashboard.*', '*.ver', '*.exportar', '*.aprobar'], ['configuracion.parametros.proponer']],
             ['Analista de Finanzas', 'finanzas', ['dashboard.*', 'finanzas.*', 'caja.cierres-de-caja.*', 'configuracion.cuentas-corrientes.*'], ['configuracion.parametros.ver', 'configuracion.parametros.proponer']],
             ['Analista de RRHH', 'rrhh', ['rrhh.*'], []],
-            ['Cajera', 'caja', ['caja.*'], ['ventascrm.cotizacion.ver']],
-            ['Ejecutiva comercial', 'ventas', ['dashboard.*', 'ventascrm.dashboard.*', 'ventascrm.cotizacion.*', 'ventascrm.orden-de-venta.*', 'ventascrm.cuentas-corrientes.*', 'inventario.stock.ver'], []],
+            ['Cajera', 'caja', ['caja.*', '!caja.*.aprobar'], ['ventascrm.cotizacion.ver', 'configuracion.clientes.ver', 'configuracion.clientes.crear', 'configuracion.producto.ver']],
+            ['Ejecutiva comercial', 'ventas', ['dashboard.*', 'ventascrm.dashboard.*', 'ventascrm.cotizacion.*', 'ventascrm.orden-de-venta.*', 'ventascrm.cuentas-corrientes.*', 'inventario.stock.ver'], ['caja.facturas-de-ventas.ver', 'caja.facturas-de-ventas.crear', 'caja.facturas-de-ventas.editar', 'configuracion.clientes.ver', 'configuracion.producto.ver']],
             ['Agente de contact center', 'contact_center', ['ventascrm.agente.ver', 'ventascrm.script.ver', 'ventascrm.cotizacion.ver', 'ventascrm.cotizacion.crear'], []],
             ['Supervisor de contact center', 'contact_center', ['ventascrm.*'], []],
             ['Bodeguero', 'bodega', ['inventario.*'], []],
@@ -39,14 +39,20 @@ class RolesSeeder extends Seeder
         }
     }
 
+    /** Patrones fnmatch; los que empiezan con "!" excluyen (p. ej. la cajera no aprueba). */
     private function coincide(string $clave, array $patrones): bool
     {
+        $si = false;
         foreach ($patrones as $p) {
-            if (fnmatch($p, $clave)) {
-                return true;
+            if (str_starts_with($p, '!')) {
+                if (fnmatch(substr($p, 1), $clave)) {
+                    return false;
+                }
+            } elseif (fnmatch($p, $clave)) {
+                $si = true;
             }
         }
 
-        return false;
+        return $si;
     }
 }
