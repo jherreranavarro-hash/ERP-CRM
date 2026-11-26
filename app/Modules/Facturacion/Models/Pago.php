@@ -14,7 +14,7 @@ class Pago extends Model
 
     public const METODOS = ['efectivo' => 'Efectivo', 'debito' => 'Débito', 'credito' => 'Crédito', 'transferencia' => 'Transferencia', 'cheque' => 'Cheque', 'nota_credito' => 'Nota de crédito'];
 
-    protected $fillable = ['documento_id', 'monto', 'metodo', 'fecha', 'referencia', 'conciliado', 'registrado_por'];
+    protected $fillable = ['documento_id', 'turno_id', 'monto', 'metodo', 'fecha', 'referencia', 'conciliado', 'registrado_por'];
 
     protected function casts(): array
     {
@@ -24,6 +24,11 @@ class Pago extends Model
     public function documento(): BelongsTo
     {
         return $this->belongsTo(Documento::class);
+    }
+
+    public function turno(): BelongsTo
+    {
+        return $this->belongsTo(\App\Modules\Caja\Models\TurnoCaja::class, 'turno_id');
     }
 
     public function usuario(): BelongsTo

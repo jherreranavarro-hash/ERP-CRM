@@ -3,6 +3,7 @@
 namespace App\Modules\Facturacion;
 
 use App\Models\User;
+use App\Modules\Caja\Models\TurnoCaja;
 use App\Modules\Comercial\Models\Cliente;
 use App\Modules\Comercial\Models\Producto;
 use App\Modules\Core\Auditoria\Auditoria;
@@ -26,6 +27,9 @@ use InvalidArgumentException;
  */
 class Documentos
 {
+    /** Medios que se cobran en el mesón y entran a la cuadratura del turno. */
+    public const MEDIOS_PRESENCIALES = ['efectivo', 'debito', 'credito'];
+
     public function __construct(
         private Calculadora $calc,
         private Parametros $parametros,
@@ -68,7 +72,7 @@ class Documentos
         $motivos = $tipo === 61 ? [] : $this->motivosDeAprobacion($lineas, $descGlobal, $formaPago, $cliente, $totales['monto_total'], $doc);
 
         return DB::transaction(function () use ($doc, $datos, $user, $tipo, $cliente, $tasa, $lineas, $descGlobal, $totales, $formaPago, $motivos, $ivaIncluido) {
-            $doc ??= new Documento(['creado_por' => $user->id]);
+            $doc ??= new Documento(['creado_por' => $user->id, 'cotizacion_id' => $datos['cotizacion_id'] ?? null]);
             $doc->fill([
                 'tipo_dte' => $tipo,
                 'cliente_id' => $cliente?->id,
@@ -289,6 +293,11 @@ class Documentos
 
     /* ───────────────────────── Cobro ───────────────────────── */
 
+    /**
+     * Cobra un documento. Los pagos presenciales (efectivo y tarjetas) exigen un
+     * turno de caja abierto del usuario y quedan en él para la cuadratura; el
+     * resto (transferencia, cheque) se asocia al turno si hay uno abierto.
+     */
     public function registrarPago(Documento $documento, int $monto, string $metodo, User $user, ?string $referencia = null): Pago
     {
         $medios = $this->parametros->valor('caja.medios', $documento->local_id);
@@ -300,6 +309,12 @@ class Documentos
         }
 
         return DB::transaction(function () use ($documento, $monto, $metodo, $user, $referencia) {
+            // Bloquea el turno: un cierre concurrente espera a este pago, o este pago ve el turno ya cerrado.
+            $turno = TurnoCaja::where('usuario_id', $user->id)->where('estado', 'abierto')->lockForUpdate()->first();
+            if (! $turno && in_array($metodo, self::MEDIOS_PRESENCIALES, true) && $this->parametros->valor('caja.cierre_por_turno', $documento->local_id)) {
+                throw ValidationException::withMessages(['metodo' => 'Abre tu turno de caja antes de cobrar en efectivo o con tarjeta.']);
+            }
+
             $doc = Documento::whereKey($documento->id)->lockForUpdate()->firstOrFail();
             if ($doc->estado !== 'emitido') {
                 throw ValidationException::withMessages(['documento' => 'Solo se cobran documentos emitidos con saldo.']);
@@ -308,7 +323,7 @@ class Documentos
                 throw ValidationException::withMessages(['monto' => 'El monto debe estar entre $1 y el saldo ($'.number_format($doc->saldo, 0, ',', '.').').']);
             }
 
-            $pago = Pago::create(['documento_id' => $doc->id, 'monto' => $monto, 'metodo' => $metodo, 'fecha' => now()->toDateString(), 'referencia' => $referencia, 'registrado_por' => $user->id]);
+            $pago = Pago::create(['documento_id' => $doc->id, 'turno_id' => $turno?->id, 'monto' => $monto, 'metodo' => $metodo, 'fecha' => now()->toDateString(), 'referencia' => $referencia, 'registrado_por' => $user->id]);
             $saldo = $doc->saldo - $monto;
             $doc->forceFill(['saldo' => $saldo, 'estado' => $saldo === 0 ? 'pagado' : 'emitido'])->save();
 
@@ -360,7 +375,7 @@ class Documentos
      * @return list<array{producto_id:?int, codigo:?string, descripcion:string, cantidad:string, unidad:string, precio_unitario:string, precio_lista:?string,
      *                    descuento_pct:string, descuento_monto:int, monto_item:int, bruto:int, exento:bool}>
      */
-    private function armarLineas(int $tipo, array $entrada, ?Cliente $cliente, string $tasa, bool $estricto = true, bool $ivaIncluido = false): array
+    public function armarLineas(int $tipo, array $entrada, ?Cliente $cliente, string $tasa, bool $estricto = true, bool $ivaIncluido = false): array
     {
         $max = (int) $this->parametros->valor('tributario.max_lineas');
         $largo = (int) $this->parametros->valor('tributario.largo_descripcion');
@@ -429,7 +444,7 @@ class Documentos
     }
 
     /** @return list<string> */
-    private function motivosDeAprobacion(array $lineas, string $descGlobal, string $formaPago, ?Cliente $cliente, int $total, ?Documento $doc): array
+    public function motivosDeAprobacion(array $lineas, string $descGlobal, string $formaPago, ?Cliente $cliente, int $total, ?Documento $doc): array
     {
         $motivos = [];
         $max = BigDecimal::of((string) $this->parametros->valor('aprobaciones.descuento_max_pct'));

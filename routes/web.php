@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Controllers\Caja\CierresController;
 use App\Http\Controllers\Caja\DocumentosController;
+use App\Http\Controllers\Caja\TurnoController;
+use App\Http\Controllers\Ventas\CotizacionesController;
 use App\Http\Controllers\Configuracion\ClientesController;
 use App\Http\Controllers\Configuracion\FoliosController;
 use App\Http\Controllers\Configuracion\ProductosController;
@@ -105,8 +108,8 @@ Route::middleware('auth')->group(function () {
     });
 
     // Búsquedas para formularios
-    Route::get('buscar/clientes', [ClientesController::class, 'buscar'])->middleware('permiso:caja.facturas-de-ventas.crear')->name('buscar.clientes');
-    Route::get('buscar/productos', [ProductosController::class, 'buscar'])->middleware('permiso:caja.facturas-de-ventas.crear')->name('buscar.productos');
+    Route::get('buscar/clientes', [ClientesController::class, 'buscar'])->middleware('permiso:caja.facturas-de-ventas.crear|ventascrm.cotizacion.crear')->name('buscar.clientes');
+    Route::get('buscar/productos', [ProductosController::class, 'buscar'])->middleware('permiso:caja.facturas-de-ventas.crear|ventascrm.cotizacion.crear')->name('buscar.productos');
 
     // Caja → Facturas de Ventas
     Route::prefix('caja/documentos')->name('caja.documentos.')->group(function () {
@@ -124,6 +127,32 @@ Route::middleware('auth')->group(function () {
         Route::post('{documento}/nota', [DocumentosController::class, 'nota'])->middleware('permiso:caja.facturas-de-ventas.anular')->name('nota');
         Route::get('{documento}/pdf', [DocumentosController::class, 'pdf'])->middleware('permiso:caja.facturas-de-ventas.ver')->name('pdf');
     });
+
+    // VentasCRM → Cotización
+    Route::prefix('ventas/cotizaciones')->name('ventas.cotizaciones.')->group(function () {
+        Route::get('/', [CotizacionesController::class, 'index'])->middleware('permiso:ventascrm.cotizacion.ver')->name('index');
+        Route::get('crear', [CotizacionesController::class, 'create'])->middleware('permiso:ventascrm.cotizacion.crear')->name('create');
+        Route::post('/', [CotizacionesController::class, 'store'])->middleware('permiso:ventascrm.cotizacion.crear')->name('store');
+        Route::post('calcular', [CotizacionesController::class, 'calcular'])->middleware(['permiso:ventascrm.cotizacion.crear', 'throttle:120,1'])->name('calcular');
+        Route::get('{cotizacion}', [CotizacionesController::class, 'show'])->middleware('permiso:ventascrm.cotizacion.ver')->name('show');
+        Route::get('{cotizacion}/editar', [CotizacionesController::class, 'edit'])->middleware('permiso:ventascrm.cotizacion.editar')->name('edit');
+        Route::put('{cotizacion}', [CotizacionesController::class, 'update'])->middleware('permiso:ventascrm.cotizacion.editar')->name('update');
+        Route::delete('{cotizacion}', [CotizacionesController::class, 'destroy'])->middleware('permiso:ventascrm.cotizacion.eliminar')->name('destroy');
+        Route::post('{cotizacion}/aprobar', [CotizacionesController::class, 'aprobar'])->middleware('permiso:ventascrm.cotizacion.aprobar')->name('aprobar');
+        Route::post('{cotizacion}/enviar', [CotizacionesController::class, 'enviar'])->middleware('permiso:ventascrm.cotizacion.editar')->name('enviar');
+        Route::post('{cotizacion}/aceptar', [CotizacionesController::class, 'aceptar'])->middleware('permiso:ventascrm.cotizacion.editar')->name('aceptar');
+        Route::post('{cotizacion}/rechazar', [CotizacionesController::class, 'rechazar'])->middleware('permiso:ventascrm.cotizacion.editar')->name('rechazar');
+        Route::post('{cotizacion}/convertir', [CotizacionesController::class, 'convertir'])->middleware('permiso:ventascrm.cotizacion.editar', 'permiso:caja.facturas-de-ventas.crear')->name('convertir');
+    });
+
+    // Caja → Caja (turno) y Cierres de Caja
+    Route::get('caja/turno', [TurnoController::class, 'index'])->middleware('permiso:caja.caja.ver')->name('caja.turno');
+    Route::post('caja/turno/abrir', [TurnoController::class, 'abrir'])->middleware('permiso:caja.caja.crear')->name('caja.turno.abrir');
+    Route::post('caja/turno/cerrar', [TurnoController::class, 'cerrar'])->middleware('permiso:caja.cierres-de-caja.crear')->name('caja.turno.cerrar');
+    Route::post('caja/cajas', [TurnoController::class, 'guardarCaja'])->middleware('permiso:configuracion.local.editar')->name('caja.cajas.store');
+    Route::get('caja/cierres', [CierresController::class, 'index'])->middleware('permiso:caja.cierres-de-caja.ver')->name('caja.cierres.index');
+    Route::get('caja/cierres/{turno}', [CierresController::class, 'show'])->middleware('permiso:caja.cierres-de-caja.ver|caja.caja.ver')->name('caja.cierres.show');
+    Route::post('caja/cierres/{turno}/aprobar', [CierresController::class, 'aprobar'])->middleware('permiso:caja.cierres-de-caja.aprobar')->name('caja.cierres.aprobar');
 
     // Finanzas
     Route::get('finanzas/libro-de-ventas', [LibroVentasController::class, 'index'])->middleware('permiso:finanzas.libro-de-ventas.ver')->name('finanzas.libro-ventas');

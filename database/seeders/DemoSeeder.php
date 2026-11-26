@@ -96,6 +96,11 @@ class DemoSeeder extends Seeder
             }
 
             Cliente::firstOrCreate(['rut' => '76543210-3'], ['razon_social' => 'Constructora Andes SpA', 'giro' => 'Construcción de edificios', 'direccion' => 'Av. Los Leones 100', 'comuna' => 'Providencia', 'ciudad' => 'Santiago', 'lista_precio' => 'mayorista', 'tiene_credito' => true, 'cupo_credito' => 5000000, 'plazo_dias' => 30]);
+            $matriz = \App\Modules\Core\Models\Local::where('codigo', 'MATRIZ')->value('id');
+            foreach (['Caja 1', 'Caja 2'] as $nombre) {
+                \App\Modules\Caja\Models\Caja::firstOrCreate(['local_id' => $matriz, 'nombre' => $nombre]);
+            }
+
             Cliente::firstOrCreate(['rut' => '11111111-1'], ['razon_social' => 'Juan Pérez Soto', 'giro' => 'Particular', 'direccion' => 'Pasaje Uno 123', 'comuna' => 'Maipú', 'ciudad' => 'Santiago', 'lista_precio' => 'meson']);
         });
     }
