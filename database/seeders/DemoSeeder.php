@@ -139,7 +139,38 @@ class DemoSeeder extends Seeder
                 ], $admin);
             }
 
+            $this->rrhh($admin);
+
             Cliente::firstOrCreate(['rut' => '11111111-1'], ['razon_social' => 'Juan Pérez Soto', 'giro' => 'Particular', 'direccion' => 'Pasaje Uno 123', 'comuna' => 'Maipú', 'ciudad' => 'Santiago', 'lista_precio' => 'meson']);
         });
+    }
+
+    /** RRHH: turnos, plantilla de contrato y cuatro personas con contrato vigente firmado. */
+    private function rrhh(User $admin): void
+    {
+        $turno = \App\Modules\RRHH\Models\Turno::firstOrCreate(['nombre' => 'Jornada completa'], ['hora_inicio' => '09:00', 'hora_fin' => '18:00', 'colacion_min' => 60, 'dias' => [1, 2, 3, 4, 5], 'activo' => true]);
+        \App\Modules\RRHH\Models\Turno::firstOrCreate(['nombre' => 'Sábado mañana'], ['hora_inicio' => '09:00', 'hora_fin' => '14:00', 'colacion_min' => 0, 'dias' => [6], 'activo' => true]);
+        \App\Modules\RRHH\Models\PlantillaContrato::firstOrCreate(['nombre' => 'Contrato de trabajo general'], ['activa' => true, 'cuerpo' => "CONTRATO DE TRABAJO\n\nEn Santiago, a {{fecha}}, entre {{empresa}}, RUT {{rut_empresa}}, en adelante el empleador, y don(ña) {{nombre}}, RUT {{rut}}, domiciliado(a) en {{domicilio}}, en adelante el trabajador, se conviene el siguiente contrato de trabajo:\n\nPRIMERO: El trabajador se desempeñará como {{cargo}} en {{local}}.\n\nSEGUNDO: La jornada ordinaria será de {{jornada}}, distribuida de lunes a viernes.\n\nTERCERO: El empleador pagará un sueldo base mensual de {{sueldo}} ({{sueldo_palabras}}), más asignación de colación de {{colacion}} y de movilización de {{movilizacion}}.\n\nCUARTO: El contrato es {{tipo}}, con inicio el {{fecha_inicio}} y término {{fecha_termino}}.\n\nPara constancia firman las partes."]);
+        if (\App\Modules\RRHH\Models\Empleado::exists()) {
+            return;
+        }
+        $local = Local::orderBy('codigo')->first();
+        $centro = \App\Modules\Finanzas\Models\CentroCosto::where('local_id', $local?->id)->value('id');
+        $personal = app(\App\Modules\RRHH\Personal::class);
+        $contratos = app(\App\Modules\RRHH\Contratos::class);
+        foreach ([
+            ['16.543.210-K', 'Carolina', 'Muñoz Vera', 'Jefa de local', 7, 'habitat', 'fonasa', 1450000, 'indefinido', 0],
+            ['17.890.123-0', 'Diego', 'Fuentes Lagos', 'Vendedor', 3, 'modelo', 'fonasa', 620000, 'indefinido', 1.5],
+            ['18.234.567-9', 'Valentina', 'Soto Pizarro', 'Cajera', 2, 'provida', 'fonasa', 560000, 'indefinido', 0],
+            ['19.456.789-8', 'Matías', 'Reyes Contreras', 'Bodeguero', 0, 'uno', 'fonasa', 540000, 'plazo_fijo', 0],
+        ] as [$rut, $nombres, $apellidos, $cargo, $anios, $afp, $salud, $sueldo, $tipo, $comision]) {
+            $ingreso = now()->subYears($anios)->subMonths(2)->startOfMonth()->toDateString();
+            $e = $personal->guardar(['rut' => $rut, 'nombres' => $nombres, 'apellidos' => $apellidos, 'cargo' => $cargo, 'fecha_ingreso' => $ingreso, 'afp' => $afp, 'salud' => $salud,
+                'local_id' => $local?->id, 'centro_costo_id' => $centro, 'comuna' => 'Santiago', 'direccion' => 'Av. Providencia 1234']);
+            $e->forceFill(['turno_id' => $turno->id])->save();
+            $c = $contratos->guardar($e, ['tipo' => $tipo, 'cargo' => $cargo, 'jornada_horas' => 42, 'sueldo_base' => $sueldo, 'gratificacion' => true, 'colacion' => 45000, 'movilizacion' => 35000,
+                'comision_pct' => $comision, 'fecha_inicio' => $ingreso, 'fecha_termino' => $tipo === 'plazo_fijo' ? now()->addDays(20)->toDateString() : null, 'texto' => "Contrato de trabajo de {$nombres} {$apellidos}."], $admin);
+            $contratos->sincronizarFirma($contratos->enviarAFirma($c, $admin), $admin);
+        }
     }
 }

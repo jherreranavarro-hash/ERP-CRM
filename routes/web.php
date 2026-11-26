@@ -27,6 +27,7 @@ use App\Http\Controllers\Finanzas\CentrosCostoController;
 use App\Http\Controllers\Finanzas\ConciliacionController;
 use App\Http\Controllers\Finanzas\FlujoCajaController;
 use App\Http\Controllers\Finanzas\HonorariosController;
+use App\Http\Controllers\RRHH;
 use App\Http\Controllers\Configuracion\AuditoriaController;
 use App\Http\Controllers\Configuracion\EmpresasController;
 use App\Http\Controllers\Configuracion\LocalesController;
@@ -266,6 +267,80 @@ Route::middleware('auth')->group(function () {
     Route::get('finanzas/libro-de-compras', [LibroComprasController::class, 'index'])->middleware('permiso:finanzas.libro-de-compras.ver')->name('finanzas.libro-compras');
     Route::get('finanzas/libro-de-ventas', [LibroVentasController::class, 'index'])->middleware('permiso:finanzas.libro-de-ventas.ver')->name('finanzas.libro-ventas');
     Route::get('finanzas/cuentas-por-cobrar', [CuentasPorCobrarController::class, 'index'])->middleware('permiso:finanzas.cuentas-por-cobrar.ver')->name('finanzas.cuentas-por-cobrar');
+
+    // RRHH
+    Route::prefix('rrhh')->name('rrhh.')->group(function () {
+        $p = fn (string $sub, string $accion) => "permiso:rrhh.{$sub}.{$accion}";
+        Route::get('personal', [RRHH\PersonalController::class, 'index'])->middleware($p('ficha-de-personal', 'ver'))->name('personal.index');
+        Route::get('personal/crear', [RRHH\PersonalController::class, 'create'])->middleware($p('ficha-de-personal', 'crear'))->name('personal.create');
+        Route::post('personal', [RRHH\PersonalController::class, 'store'])->middleware($p('ficha-de-personal', 'crear'))->name('personal.store');
+        Route::get('personal/{empleado}', [RRHH\PersonalController::class, 'show'])->middleware($p('ficha-de-personal', 'ver'))->name('personal.show');
+        Route::get('personal/{empleado}/editar', [RRHH\PersonalController::class, 'edit'])->middleware($p('ficha-de-personal', 'editar'))->name('personal.edit');
+        Route::put('personal/{empleado}', [RRHH\PersonalController::class, 'update'])->middleware($p('ficha-de-personal', 'editar'))->name('personal.update');
+        Route::post('personal/{empleado}/documentos', [RRHH\PersonalController::class, 'adjuntar'])->middleware($p('ficha-de-personal', 'editar'))->name('personal.adjuntar');
+        Route::get('documentos/{documento}', [RRHH\PersonalController::class, 'documento'])->middleware($p('ficha-de-personal', 'ver'))->name('personal.documento');
+
+        Route::get('contratos', [RRHH\ContratosController::class, 'index'])->middleware($p('gestion-de-contratos', 'ver'))->name('contratos.index');
+        Route::get('contratos/crear', [RRHH\ContratosController::class, 'create'])->middleware($p('gestion-de-contratos', 'crear'))->name('contratos.create');
+        Route::post('contratos', [RRHH\ContratosController::class, 'store'])->middleware($p('gestion-de-contratos', 'crear'))->name('contratos.store');
+        Route::get('contratos/plantillas', [RRHH\ContratosController::class, 'plantillas'])->middleware($p('gestion-de-contratos', 'ver'))->name('contratos.plantillas');
+        Route::post('contratos/plantillas', [RRHH\ContratosController::class, 'guardarPlantilla'])->middleware($p('gestion-de-contratos', 'editar'))->name('contratos.plantillas.store');
+        Route::put('contratos/plantillas/{plantilla}', [RRHH\ContratosController::class, 'guardarPlantilla'])->middleware($p('gestion-de-contratos', 'editar'))->name('contratos.plantillas.update');
+        Route::get('contratos/{contrato}', [RRHH\ContratosController::class, 'show'])->middleware($p('gestion-de-contratos', 'ver'))->name('contratos.show');
+        Route::get('contratos/{contrato}/editar', [RRHH\ContratosController::class, 'edit'])->middleware($p('gestion-de-contratos', 'editar'))->name('contratos.edit');
+        Route::put('contratos/{contrato}', [RRHH\ContratosController::class, 'update'])->middleware($p('gestion-de-contratos', 'editar'))->name('contratos.update');
+        Route::post('contratos/{contrato}/enviar', [RRHH\ContratosController::class, 'enviar'])->middleware($p('gestion-de-contratos', 'editar'))->name('contratos.enviar');
+        Route::post('contratos/{contrato}/sincronizar', [RRHH\ContratosController::class, 'sincronizar'])->middleware($p('gestion-de-contratos', 'editar'))->name('contratos.sincronizar');
+
+        Route::get('turnos', [RRHH\TurnosController::class, 'index'])->middleware($p('gestion-de-turnos', 'ver'))->name('turnos');
+        Route::post('turnos', [RRHH\TurnosController::class, 'store'])->middleware($p('gestion-de-turnos', 'crear'))->name('turnos.store');
+        Route::put('turnos/{turno}', [RRHH\TurnosController::class, 'update'])->middleware($p('gestion-de-turnos', 'editar'))->name('turnos.update');
+        Route::post('turnos/{turno}/asignar', [RRHH\TurnosController::class, 'asignar'])->middleware($p('gestion-de-turnos', 'editar'))->name('turnos.asignar');
+
+        Route::get('asistencia', [RRHH\AsistenciaController::class, 'index'])->middleware($p('control-de-asistencia', 'ver'))->name('asistencia');
+        Route::post('asistencia/marcas', [RRHH\AsistenciaController::class, 'marcar'])->middleware($p('control-de-asistencia', 'crear'))->name('asistencia.marcar');
+        Route::post('asistencia/importar', [RRHH\AsistenciaController::class, 'importar'])->middleware($p('control-de-asistencia', 'crear'))->name('asistencia.importar');
+
+        Route::get('nominas', [RRHH\NominasController::class, 'index'])->middleware($p('nomina-y-liquidaciones', 'ver'))->name('nominas.index');
+        Route::post('nominas', [RRHH\NominasController::class, 'generar'])->middleware($p('nomina-y-liquidaciones', 'crear'))->name('nominas.generar');
+        Route::get('nominas/{nomina}', [RRHH\NominasController::class, 'show'])->middleware($p('nomina-y-liquidaciones', 'ver'))->name('nominas.show');
+        Route::post('nominas/{nomina}/aprobar', [RRHH\NominasController::class, 'aprobar'])->middleware($p('nomina-y-liquidaciones', 'aprobar'))->name('nominas.aprobar');
+        Route::post('nominas/{nomina}/pagar', [RRHH\NominasController::class, 'pagar'])->middleware($p('nomina-y-liquidaciones', 'editar'))->name('nominas.pagar');
+        Route::post('liquidaciones/{liquidacion}/bonos', [RRHH\NominasController::class, 'bonos'])->middleware($p('nomina-y-liquidaciones', 'editar'))->name('liquidaciones.bonos');
+        Route::get('liquidaciones/{liquidacion}/pdf', [RRHH\NominasController::class, 'pdf'])->middleware($p('nomina-y-liquidaciones', 'ver'))->name('liquidaciones.pdf');
+        Route::get('parametros', fn () => to_route('configuracion.parametros.show', 'nomina'))->middleware($p('parametros-de-nomina', 'ver'))->name('parametros');
+
+        Route::get('ausencias', [RRHH\AusenciasController::class, 'index'])->middleware($p('vacaciones-y-ausencias', 'ver'))->name('ausencias');
+        Route::post('ausencias', [RRHH\AusenciasController::class, 'store'])->middleware($p('vacaciones-y-ausencias', 'crear'))->name('ausencias.store');
+        Route::get('ausencias/saldo/{empleado}', [RRHH\AusenciasController::class, 'saldo'])->middleware($p('vacaciones-y-ausencias', 'ver'))->name('ausencias.saldo');
+        Route::post('ausencias/{ausencia}/aprobar', [RRHH\AusenciasController::class, 'aprobar'])->middleware($p('vacaciones-y-ausencias', 'aprobar'))->name('ausencias.aprobar');
+        Route::post('ausencias/{ausencia}/rechazar', [RRHH\AusenciasController::class, 'rechazar'])->middleware($p('vacaciones-y-ausencias', 'aprobar'))->name('ausencias.rechazar');
+        Route::post('ausencias/{ausencia}/anular', [RRHH\AusenciasController::class, 'anular'])->middleware($p('vacaciones-y-ausencias', 'eliminar'))->name('ausencias.anular');
+
+        Route::get('cumplimiento', [RRHH\CumplimientoController::class, 'index'])->middleware($p('cumplimiento-normativo', 'ver'))->name('cumplimiento');
+
+        Route::get('finiquitos', [RRHH\FiniquitosController::class, 'index'])->middleware($p('desvinculaciones-y-finiquitos', 'ver'))->name('finiquitos');
+        Route::post('finiquitos', [RRHH\FiniquitosController::class, 'store'])->middleware($p('desvinculaciones-y-finiquitos', 'crear'))->name('finiquitos.store');
+        Route::post('finiquitos/{finiquito}/aprobar', [RRHH\FiniquitosController::class, 'aprobar'])->middleware($p('desvinculaciones-y-finiquitos', 'aprobar'))->name('finiquitos.aprobar');
+        Route::post('finiquitos/{finiquito}/firmar', [RRHH\FiniquitosController::class, 'firmar'])->middleware($p('desvinculaciones-y-finiquitos', 'editar'))->name('finiquitos.firmar');
+        Route::post('finiquitos/{finiquito}/anular', [RRHH\FiniquitosController::class, 'anular'])->middleware($p('desvinculaciones-y-finiquitos', 'eliminar'))->name('finiquitos.anular');
+
+        Route::get('indicadores', [RRHH\IndicadoresController::class, 'index'])->middleware($p('indicadores-y-reportes', 'ver'))->name('indicadores');
+
+        Route::get('anticipos', [RRHH\AnticiposController::class, 'index'])->middleware($p('registrar-anticipo', 'ver'))->name('anticipos');
+        Route::post('anticipos', [RRHH\AnticiposController::class, 'store'])->middleware($p('registrar-anticipo', 'crear'))->name('anticipos.store');
+        Route::post('anticipos/{anticipo}/anular', [RRHH\AnticiposController::class, 'anular'])->middleware($p('registrar-anticipo', 'eliminar'))->name('anticipos.anular');
+
+        Route::get('comisiones', [RRHH\ComisionesController::class, 'index'])->middleware($p('comisiones-de-venta', 'ver'))->name('comisiones');
+        Route::post('comisiones/aprobar', [RRHH\ComisionesController::class, 'aprobar'])->middleware($p('comisiones-de-venta', 'aprobar'))->name('comisiones.aprobar');
+        Route::post('comisiones/reglas', [RRHH\ComisionesController::class, 'guardarRegla'])->middleware($p('comisiones-de-venta', 'aprobar'))->name('comisiones.reglas');
+        Route::delete('comisiones/reglas/{regla}', [RRHH\ComisionesController::class, 'eliminarRegla'])->middleware($p('comisiones-de-venta', 'aprobar'))->name('comisiones.reglas.destroy');
+
+        Route::get('prestamos', [RRHH\PrestamosController::class, 'index'])->middleware($p('gestion-de-prestamos', 'ver'))->name('prestamos');
+        Route::post('prestamos', [RRHH\PrestamosController::class, 'store'])->middleware($p('gestion-de-prestamos', 'crear'))->name('prestamos.store');
+        Route::post('prestamos/{prestamo}/aprobar', [RRHH\PrestamosController::class, 'aprobar'])->middleware($p('gestion-de-prestamos', 'aprobar'))->name('prestamos.aprobar');
+        Route::post('prestamos/{prestamo}/rechazar', [RRHH\PrestamosController::class, 'rechazar'])->middleware($p('gestion-de-prestamos', 'aprobar'))->name('prestamos.rechazar');
+    });
 
     // Finanzas: tesorería, contabilidad y honorarios
     Route::prefix('finanzas')->name('finanzas.')->group(function () {

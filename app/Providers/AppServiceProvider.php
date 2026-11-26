@@ -34,6 +34,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(VerificadorCaptcha::class, CaptchaAritmetico::class);
         // Proveedor DTE real pendiente de elección; mientras tanto, el simulado.
         $this->app->bind(ProveedorDTE::class, ProveedorDteSimulado::class);
+        // RRHH: firma electrónica simulada y lector del archivo del reloj control (proveedores reales en fase 4).
+        $this->app->bind(\App\Modules\RRHH\Integraciones\FirmaElectronica::class, \App\Modules\RRHH\Integraciones\FirmaSimulada::class);
+        $this->app->bind(\App\Modules\RRHH\Integraciones\RelojControl::class, \App\Modules\RRHH\Integraciones\RelojCsv::class);
         // Transportistas externos: por ahora solo el simulado (integraciones reales en fase 4).
         $this->app->singleton(\App\Modules\Inventario\Transporte\Transportistas::class, fn () => new \App\Modules\Inventario\Transporte\Transportistas([new \App\Modules\Inventario\Transporte\TransportistaSimulado]));
     }
@@ -50,6 +53,7 @@ class AppServiceProvider extends ServiceProvider
         // Eventos de dominio entre módulos (síncronos, dentro de la transacción que los origina).
         Event::listen(\App\Modules\Facturacion\Eventos\DocumentoEmitido::class, \App\Modules\Inventario\Escuchas\MoverStockAlEmitir::class);
         Event::listen(\App\Modules\Facturacion\Eventos\DocumentoEmitido::class, \App\Modules\Finanzas\Escuchas\ContabilizarDocumento::class);
+        Event::listen(\App\Modules\Facturacion\Eventos\DocumentoEmitido::class, \App\Modules\RRHH\Escuchas\RegistrarComision::class);
 
         RateLimiter::for('api-token', function (Request $request) {
             $token = $request->user()?->currentAccessToken();

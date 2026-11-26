@@ -16,7 +16,7 @@ class RolesSeeder extends Seeder
             ['Administrador del sistema', 'superadmin', ['*'], []],
             ['Gerente', 'gerencia', ['dashboard.*', '*.ver', '*.exportar', '*.aprobar'], ['configuracion.parametros.proponer']],
             ['Analista de Finanzas', 'finanzas', ['dashboard.*', 'finanzas.*', 'caja.cierres-de-caja.*', 'configuracion.cuentas-corrientes.*', 'configuracion.folios.*', 'compras.factura-de-proveedores.*'], ['configuracion.parametros.ver', 'configuracion.parametros.proponer', 'configuracion.clientes.ver', 'configuracion.proveedores.ver', 'compras.orden-de-compra.ver']],
-            ['Analista de RRHH', 'rrhh', ['rrhh.*'], []],
+            ['Analista de RRHH', 'rrhh', ['rrhh.*'], ['configuracion.parametros.ver', 'configuracion.parametros.proponer']],
             ['Cajera', 'caja', ['caja.*', '!caja.*.aprobar'], ['ventascrm.cotizacion.ver', 'configuracion.clientes.ver', 'configuracion.clientes.crear', 'configuracion.producto.ver']],
             ['Ejecutiva comercial', 'ventas', ['dashboard.*', 'ventascrm.dashboard.*', 'ventascrm.cotizacion.*', 'ventascrm.orden-de-venta.*', 'ventascrm.cuentas-corrientes.*', 'inventario.stock.ver'], ['caja.facturas-de-ventas.ver', 'caja.facturas-de-ventas.crear', 'caja.facturas-de-ventas.editar', 'configuracion.clientes.ver', 'configuracion.producto.ver']],
             ['Agente de contact center', 'contact_center', ['ventascrm.agente.ver', 'ventascrm.script.ver', 'ventascrm.cotizacion.ver', 'ventascrm.cotizacion.crear'], []],

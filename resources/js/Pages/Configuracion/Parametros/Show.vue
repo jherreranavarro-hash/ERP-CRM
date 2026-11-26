@@ -192,8 +192,8 @@ const tieneLocal = computed(() => props.parametros.some((p) => p.alcances.includ
             </Campo>
 
             <Campo etiqueta="Valor nuevo" id="valor" :error="form.errors.valor" :ayuda="editando.estricto && form.alcance !== 'global' ? 'Una empresa o local solo puede ser igual o más estricto que el valor global.' : (editando.ayuda ?? undefined)">
-                <div v-if="editando.tipo === 'entero' || editando.tipo === 'porcentaje'" class="flex items-center gap-2">
-                    <input id="valor" v-model.number="form.valor" type="number" :min="editando.min ?? undefined" :max="editando.max ?? undefined" :step="editando.tipo === 'porcentaje' ? '0.01' : '1'" class="campo num h-11 max-w-[220px]" />
+                <div v-if="['entero', 'decimal', 'porcentaje'].includes(editando.tipo)" class="flex items-center gap-2">
+                    <input id="valor" v-model.number="form.valor" type="number" :min="editando.min ?? undefined" :max="editando.max ?? undefined" :step="editando.tipo === 'entero' ? '1' : editando.tipo === 'decimal' ? '0.0001' : '0.01'" class="campo num h-11 max-w-[220px]" />
                     <span v-if="editando.unidad" class="text-grafito">{{ editando.unidad }}</span>
                 </div>
                 <Interruptor v-else-if="editando.tipo === 'booleano'" :model-value="!!form.valor" etiqueta="Activado" @update:model-value="form.valor = $event" />
