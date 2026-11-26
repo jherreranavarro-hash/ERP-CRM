@@ -97,6 +97,23 @@ return [
             'sslmode' => 'prefer',
         ],
 
+        // Conexión del dueño del esquema: solo para migraciones y semillas.
+        // La aplicación usa 'pgsql' con el rol erp_app, que no es dueño de las
+        // tablas y por eso queda sujeto a Row-Level Security.
+        'pgsql_owner' => [
+            'driver' => 'pgsql',
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '5432'),
+            'database' => env('DB_DATABASE', 'erp'),
+            'username' => env('DB_OWNER_USERNAME', 'erp_owner'),
+            'password' => env('DB_OWNER_PASSWORD', ''),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => 'prefer',
+        ],
+
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DB_URL'),
