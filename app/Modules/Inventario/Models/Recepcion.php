@@ -29,6 +29,11 @@ class Recepcion extends Model
         return $this->hasMany(RecepcionLinea::class)->orderBy('id');
     }
 
+    public function ordenCompra(): BelongsTo
+    {
+        return $this->belongsTo(\App\Modules\Compras\Models\OrdenCompra::class);
+    }
+
     public function local(): BelongsTo
     {
         return $this->belongsTo(Local::class);

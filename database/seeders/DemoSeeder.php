@@ -113,6 +113,17 @@ class DemoSeeder extends Seeder
                 $inv->confirmar($rec, $admin);
             }
 
+            // Compras: proveedores y una orden de compra aprobada lista para recibir.
+            $sur = \App\Modules\Compras\Models\Proveedor::firstOrCreate(['rut' => '96512340-7'], ['razon_social' => 'Distribuidora Ferretera del Sur', 'giro' => 'Distribución de materiales', 'comuna' => 'San Bernardo', 'contacto' => 'Patricia Muñoz', 'email' => 'ventas@ferresur.example', 'plazo_pago_dias' => 30]);
+            \App\Modules\Compras\Models\Proveedor::firstOrCreate(['rut' => '76086428-5'], ['razon_social' => 'Aceros y Fierros Andinos Ltda.', 'giro' => 'Comercialización de acero', 'comuna' => 'Quilicura', 'plazo_pago_dias' => 45]);
+            if ($matriz && ! \App\Modules\Compras\Models\OrdenCompra::exists()) {
+                $oc = app(\App\Modules\Compras\OrdenesCompra::class);
+                $orden = $oc->guardar(['proveedor_id' => $sur->id, 'local_id' => $matriz, 'fecha_entrega' => now()->addDays(3)->toDateString(), 'observaciones' => 'Reposición semanal',
+                    'lineas' => Producto::whereIn('sku', ['CEM-25', 'YES-15'])->get()->map(fn ($p) => ['producto_id' => $p->id, 'cantidad' => $p->sku === 'CEM-25' ? 60 : 20, 'costo_unitario' => $p->sku === 'CEM-25' ? 3600 : 6300])->all(),
+                ], $admin);
+                $oc->enviar($orden, $admin);
+            }
+
             Cliente::firstOrCreate(['rut' => '11111111-1'], ['razon_social' => 'Juan Pérez Soto', 'giro' => 'Particular', 'direccion' => 'Pasaje Uno 123', 'comuna' => 'Maipú', 'ciudad' => 'Santiago', 'lista_precio' => 'meson']);
         });
     }

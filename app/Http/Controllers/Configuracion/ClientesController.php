@@ -20,7 +20,7 @@ class ClientesController extends Controller
         $q = Cliente::query()->orderBy('razon_social');
         if ($b = $request->string('buscar')->trim()->value()) {
             $rut = Rut::normalizar($b);
-            $q->where(fn ($q) => $q->where('razon_social', 'ilike', "%{$b}%")->orWhere('rut', 'ilike', "%{$rut}%"));
+            $q->where(fn ($q) => $q->where('razon_social', 'ilike', "%{$b}%")->when($rut && preg_match('/\d/', $rut), fn ($q) => $q->orWhere('rut', 'ilike', "%{$rut}%")));
         }
         if ($request->input('credito') === '1') {
             $q->where('tiene_credito', true);
@@ -67,7 +67,7 @@ class ClientesController extends Controller
         $b = $request->string('q')->trim()->value();
 
         return Cliente::query()->where('activo', true)
-            ->when($b, fn ($q) => $q->where(fn ($q) => $q->where('razon_social', 'ilike', "%{$b}%")->orWhere('rut', 'ilike', '%'.Rut::normalizar($b).'%')))
+            ->when($b, fn ($q) => $q->where(fn ($q) => $q->where('razon_social', 'ilike', "%{$b}%")->when(preg_match('/\d/', (string) Rut::normalizar($b)), fn ($q) => $q->orWhere('rut', 'ilike', '%'.Rut::normalizar($b).'%'))))
             ->orderBy('razon_social')->limit(15)
             ->get(['id', 'rut', 'razon_social', 'giro', 'direccion', 'comuna', 'lista_precio', 'tiene_credito', 'cupo_credito', 'plazo_dias']);
     }

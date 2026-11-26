@@ -71,3 +71,27 @@ export const estadoDevolucion: Record<string, [Tono, string]> = {
     aprobada: ['ok', 'Aprobada'],
     rechazada: ['error', 'Rechazada'],
 };
+
+export const estadoOC: Record<string, [Tono, string]> = {
+    borrador: ['neutro', 'Borrador'],
+    por_aprobar: ['alerta', 'Por aprobar'],
+    aprobada: ['info', 'Aprobada'],
+    parcial: ['alerta', 'Recibida en parte'],
+    recibida: ['ok', 'Recibida'],
+    cerrada: ['neutro', 'Cerrada'],
+    anulada: ['neutro', 'Anulada'],
+    rechazada: ['error', 'Rechazada'],
+};
+
+export const estadoFacturaProveedor: Record<string, [Tono, string]> = {
+    por_revisar: ['alerta', 'Por revisar'],
+    por_pagar: ['info', 'Por pagar'],
+    pagada: ['ok', 'Pagada'],
+    rechazada: ['error', 'Rechazada'],
+};
+
+export const estadoPagoProveedor: Record<string, [Tono, string]> = {
+    por_aprobar: ['alerta', 'Por aprobar'],
+    aplicado: ['ok', 'Aplicado'],
+    rechazado: ['error', 'Rechazado'],
+};

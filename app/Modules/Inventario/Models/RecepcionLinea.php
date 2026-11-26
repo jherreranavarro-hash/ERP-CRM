@@ -13,7 +13,7 @@ class RecepcionLinea extends Model
 
     protected $table = 'recepcion_lineas';
 
-    protected $fillable = ['producto_id', 'cantidad', 'costo_unitario'];
+    protected $fillable = ['producto_id', 'orden_compra_linea_id', 'cantidad', 'costo_unitario'];
 
     public function producto(): BelongsTo
     {
