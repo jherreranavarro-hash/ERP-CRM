@@ -50,7 +50,10 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/', InicioController::class)->name('inicio');
-    Route::get('/dashboard', InicioController::class)->name('dashboard');
+    Route::get('/dashboard', [\App\Http\Controllers\Dashboard\DashboardController::class, 'crm'])->middleware('permiso:dashboard.crm.ver')->name('dashboard');
+    Route::get('/ventas/dashboard', [\App\Http\Controllers\Dashboard\DashboardController::class, 'comercial'])->middleware('permiso:ventascrm.dashboard.ver')->name('ventas.dashboard');
+    Route::get('/ventas/cuentas-corrientes', [\App\Http\Controllers\Dashboard\CuentasCorrientesController::class, 'index'])->middleware('permiso:ventascrm.cuentas-corrientes.ver|configuracion.cuentas-corrientes.ver')->name('ventas.cuentas-corrientes');
+    Route::get('/ventas/cuentas-corrientes/{cliente}', [\App\Http\Controllers\Dashboard\CuentasCorrientesController::class, 'show'])->middleware('permiso:ventascrm.cuentas-corrientes.ver|configuracion.cuentas-corrientes.ver')->name('ventas.cuentas-corrientes.show');
     Route::post('/empresa-activa', EmpresaActivaController::class)->name('empresa.cambiar');
     Route::get('/pendiente/{modulo}/{submodulo}', PendienteController::class)->name('pendiente');
 

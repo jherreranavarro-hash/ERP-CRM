@@ -109,7 +109,7 @@ return [
             'nombre' => 'VentasCRM',
             'icono' => 'ventas',
             'submodulos' => [
-                'dashboard' => ['nombre' => 'Dashboard', 'acciones' => ['ver'], 'fase' => 3],
+                'dashboard' => ['nombre' => 'Dashboard', 'acciones' => ['ver'], 'fase' => 3, 'ruta' => 'ventas.dashboard'],
                 'agente' => ['nombre' => 'Agente', 'acciones' => $crud, 'fase' => 4],
                 'tiempo-real' => ['nombre' => 'Tiempo Real', 'acciones' => ['ver'], 'fase' => 4],
                 'panel-de-control' => ['nombre' => 'Panel de Control', 'acciones' => ['ver', 'editar'], 'fase' => 4],
@@ -121,7 +121,7 @@ return [
                 'asignacion' => ['nombre' => 'Asignación', 'acciones' => $crud, 'fase' => 4],
                 'lista-de-recorrido' => ['nombre' => 'Lista de Recorrido', 'acciones' => $crud, 'fase' => 4],
                 'script' => ['nombre' => 'Script', 'acciones' => $crud, 'fase' => 4],
-                'cuentas-corrientes' => ['nombre' => 'Cuentas Corrientes por Cliente', 'acciones' => ['ver', 'exportar'], 'fase' => 2],
+                'cuentas-corrientes' => ['nombre' => 'Cuentas Corrientes por Cliente', 'acciones' => ['ver', 'exportar'], 'fase' => 2, 'ruta' => 'ventas.cuentas-corrientes'],
             ],
         ],
 
@@ -160,7 +160,7 @@ return [
                 'parametros-de-despacho' => ['nombre' => 'Parámetros de Despacho', 'acciones' => ['ver', 'editar'], 'fase' => 3, 'ruta' => 'configuracion.despacho'],
                 'documentacion-informe-ventas' => ['nombre' => 'Documentación Informe Ventas', 'acciones' => ['ver'], 'fase' => 2],
                 'listas-de-precios' => ['nombre' => 'Listas de Precios', 'acciones' => $crud, 'fase' => 2],
-                'cuentas-corrientes' => ['nombre' => 'Cuentas Corrientes por Cliente', 'acciones' => $crud, 'fase' => 2],
+                'cuentas-corrientes' => ['nombre' => 'Cuentas Corrientes por Cliente', 'acciones' => $crud, 'fase' => 2, 'ruta' => 'ventas.cuentas-corrientes'],
             ],
         ],
     ],
