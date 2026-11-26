@@ -175,20 +175,8 @@ class Cotizaciones
                 throw ValidationException::withMessages(['cotizacion' => 'Solo se convierte una cotización enviada o aceptada.']);
             }
 
-            $tasa = (string) $this->parametros->valor('tributario.tasa_iva');
-            $lineas = $cot->lineas->map(fn ($l) => [
-                'producto_id' => $l->producto_id,
-                'codigo' => $l->codigo,
-                'descripcion' => $l->descripcion,
-                'cantidad' => (string) $l->cantidad,
-                'unidad' => $l->unidad,
-                // En boleta el precio va con IVA incluido.
-                'precio_unitario' => $tipo === 39 && ! $l->exento ? (string) $this->calc->precioConIva((string) $l->precio_unitario, $tasa) : (string) $l->precio_unitario,
-                'precio_manual' => true,   // el precio cotizado se respeta aunque la lista haya cambiado
-                'descuento_pct' => (string) $l->descuento_pct,
-                'descuento_monto' => (float) $l->descuento_pct > 0 ? null : ($l->descuento_monto ?: null),
-                'exento' => $l->exento,
-            ])->all();
+            $hacia = app(HaciaDocumento::class);
+            $lineas = $hacia->lineas($cot->lineas, $tipo, (string) $this->parametros->valor('tributario.tasa_iva'));
 
             $doc = $this->documentos->guardar([
                 'tipo_dte' => $tipo,
@@ -201,11 +189,7 @@ class Cotizaciones
                 'lineas' => $lineas,
             ], $user);
 
-            $motivosCupo = array_filter($doc->aprobacion_motivos ?? [], fn ($m) => str_starts_with($m, 'Cupo'));
-            if ($doc->estado === 'por_aprobar' && $cot->aprobado_por && ! $motivosCupo) {
-                $doc->forceFill(['estado' => 'borrador', 'aprobado_por' => $cot->aprobado_por])->save();
-                $this->auditoria->registrar('documento.aprobacion_heredada', $doc, null, ['cotizacion' => $cot->numero, 'motivos' => $doc->aprobacion_motivos]);
-            }
+            $hacia->heredarAprobacion($doc, $cot->aprobado_por, "Cotización N° {$cot->numero}");
 
             $cot->forceFill(['estado' => 'convertida', 'documento_id' => $doc->id])->save();
             $this->auditoria->registrar('cotizacion.convertir', $cot, null, ['documento_id' => $doc->id, 'tipo_dte' => $tipo]);

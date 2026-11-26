@@ -4,6 +4,10 @@ use App\Http\Controllers\Caja\CierresController;
 use App\Http\Controllers\Caja\DocumentosController;
 use App\Http\Controllers\Caja\TurnoController;
 use App\Http\Controllers\Ventas\CotizacionesController;
+use App\Http\Controllers\Ventas\OrdenesController;
+use App\Http\Controllers\Inventario\MermasController;
+use App\Http\Controllers\Inventario\RecepcionesController;
+use App\Http\Controllers\Inventario\StockController;
 use App\Http\Controllers\Configuracion\ClientesController;
 use App\Http\Controllers\Configuracion\FoliosController;
 use App\Http\Controllers\Configuracion\ProductosController;
@@ -109,7 +113,7 @@ Route::middleware('auth')->group(function () {
 
     // Búsquedas para formularios
     Route::get('buscar/clientes', [ClientesController::class, 'buscar'])->middleware('permiso:caja.facturas-de-ventas.crear|ventascrm.cotizacion.crear')->name('buscar.clientes');
-    Route::get('buscar/productos', [ProductosController::class, 'buscar'])->middleware('permiso:caja.facturas-de-ventas.crear|ventascrm.cotizacion.crear')->name('buscar.productos');
+    Route::get('buscar/productos', [ProductosController::class, 'buscar'])->middleware('permiso:caja.facturas-de-ventas.crear|ventascrm.cotizacion.crear|inventario.recepcion-de-mercaderia.crear|inventario.mermas.crear')->name('buscar.productos');
 
     // Caja → Facturas de Ventas
     Route::prefix('caja/documentos')->name('caja.documentos.')->group(function () {
@@ -153,6 +157,36 @@ Route::middleware('auth')->group(function () {
     Route::get('caja/cierres', [CierresController::class, 'index'])->middleware('permiso:caja.cierres-de-caja.ver')->name('caja.cierres.index');
     Route::get('caja/cierres/{turno}', [CierresController::class, 'show'])->middleware('permiso:caja.cierres-de-caja.ver|caja.caja.ver')->name('caja.cierres.show');
     Route::post('caja/cierres/{turno}/aprobar', [CierresController::class, 'aprobar'])->middleware('permiso:caja.cierres-de-caja.aprobar')->name('caja.cierres.aprobar');
+
+    // VentasCRM → Orden de Venta
+    Route::post('ventas/cotizaciones/{cotizacion}/orden', [OrdenesController::class, 'desdeCotizacion'])->middleware('permiso:ventascrm.orden-de-venta.crear')->name('ventas.cotizaciones.orden');
+    Route::prefix('ventas/ordenes')->name('ventas.ordenes.')->group(function () {
+        Route::get('/', [OrdenesController::class, 'index'])->middleware('permiso:ventascrm.orden-de-venta.ver|inventario.orden-de-venta.ver')->name('index');
+        Route::get('{orden}', [OrdenesController::class, 'show'])->middleware('permiso:ventascrm.orden-de-venta.ver|inventario.orden-de-venta.ver')->name('show');
+        Route::post('{orden}/facturar', [OrdenesController::class, 'facturar'])->middleware('permiso:ventascrm.orden-de-venta.editar', 'permiso:caja.facturas-de-ventas.crear')->name('facturar');
+        Route::post('{orden}/anular', [OrdenesController::class, 'anular'])->middleware('permiso:ventascrm.orden-de-venta.eliminar')->name('anular');
+    });
+
+    // Inventario
+    Route::prefix('inventario')->name('inventario.')->group(function () {
+        Route::get('stock', [StockController::class, 'index'])->middleware('permiso:inventario.stock.ver|caja.stock.ver')->name('stock.index');
+        Route::get('stock/{producto}/kardex', [StockController::class, 'kardex'])->middleware('permiso:inventario.stock.ver|caja.stock.ver')->name('stock.kardex');
+        Route::post('stock/{producto}/minimo', [StockController::class, 'minimo'])->middleware('permiso:inventario.stock.editar')->name('stock.minimo');
+
+        Route::get('recepciones', [RecepcionesController::class, 'index'])->middleware('permiso:inventario.recepcion-de-mercaderia.ver')->name('recepciones.index');
+        Route::get('recepciones/crear', [RecepcionesController::class, 'create'])->middleware('permiso:inventario.recepcion-de-mercaderia.crear')->name('recepciones.create');
+        Route::post('recepciones', [RecepcionesController::class, 'store'])->middleware('permiso:inventario.recepcion-de-mercaderia.crear')->name('recepciones.store');
+        Route::get('recepciones/{recepcion}', [RecepcionesController::class, 'show'])->middleware('permiso:inventario.recepcion-de-mercaderia.ver')->name('recepciones.show');
+        Route::get('recepciones/{recepcion}/editar', [RecepcionesController::class, 'edit'])->middleware('permiso:inventario.recepcion-de-mercaderia.editar')->name('recepciones.edit');
+        Route::put('recepciones/{recepcion}', [RecepcionesController::class, 'update'])->middleware('permiso:inventario.recepcion-de-mercaderia.editar')->name('recepciones.update');
+        Route::delete('recepciones/{recepcion}', [RecepcionesController::class, 'destroy'])->middleware('permiso:inventario.recepcion-de-mercaderia.eliminar')->name('recepciones.destroy');
+        Route::post('recepciones/{recepcion}/confirmar', [RecepcionesController::class, 'confirmar'])->middleware('permiso:inventario.recepcion-de-mercaderia.confirmar')->name('recepciones.confirmar');
+
+        Route::get('mermas', [MermasController::class, 'index'])->middleware('permiso:inventario.mermas.ver')->name('mermas.index');
+        Route::post('mermas', [MermasController::class, 'store'])->middleware('permiso:inventario.mermas.crear')->name('mermas.store');
+        Route::post('mermas/{merma}/aprobar', [MermasController::class, 'aprobar'])->middleware('permiso:inventario.mermas.aprobar')->name('mermas.aprobar');
+        Route::post('mermas/{merma}/rechazar', [MermasController::class, 'rechazar'])->middleware('permiso:inventario.mermas.aprobar')->name('mermas.rechazar');
+    });
 
     // Finanzas
     Route::get('finanzas/libro-de-ventas', [LibroVentasController::class, 'index'])->middleware('permiso:finanzas.libro-de-ventas.ver')->name('finanzas.libro-ventas');

@@ -45,6 +45,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::before(fn (User $user, string $ability) => str_contains($ability, '.') ? $user->tienePermiso($ability) : null);
 
         Event::subscribe(EventosAutenticacion::class);
+        // Eventos de dominio entre módulos (síncronos, dentro de la transacción que los origina).
+        Event::listen(\App\Modules\Facturacion\Eventos\DocumentoEmitido::class, \App\Modules\Inventario\Escuchas\MoverStockAlEmitir::class);
 
         RateLimiter::for('api-token', function (Request $request) {
             $token = $request->user()?->currentAccessToken();

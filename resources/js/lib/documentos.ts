@@ -34,3 +34,19 @@ export function estadoTurno(t: { estado: string; diferencia: number | null; requ
     if (t.diferencia) return ['neutro', 'Diferencia en tolerancia'];
     return ['ok', 'Cuadrado'];
 }
+
+export const estadoOrden: Record<string, [Tono, string]> = {
+    confirmada: ['info', 'Confirmada'],
+    vencida: ['alerta', 'Reserva vencida'],
+    facturada: ['ok', 'Facturada'],
+    anulada: ['error', 'Anulada'],
+};
+
+export const estadoMerma: Record<string, [Tono, string]> = {
+    por_aprobar: ['alerta', 'Por aprobar'],
+    registrada: ['ok', 'Registrada'],
+    rechazada: ['error', 'Rechazada'],
+};
+
+/** Cantidad con decimales solo si los tiene. */
+export const cantidad = (v: number | string) => Number(v).toLocaleString('es-CL', { maximumFractionDigits: 3 });

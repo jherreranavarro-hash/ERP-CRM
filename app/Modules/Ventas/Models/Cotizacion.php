@@ -50,6 +50,11 @@ class Cotizacion extends Model
         return $this->belongsTo(Local::class);
     }
 
+    public function ordenVenta(): BelongsTo
+    {
+        return $this->belongsTo(OrdenVenta::class);
+    }
+
     public function documento(): BelongsTo
     {
         return $this->belongsTo(Documento::class);

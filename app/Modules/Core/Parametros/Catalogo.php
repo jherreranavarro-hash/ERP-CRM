@@ -295,6 +295,16 @@ class Catalogo
                     'cotizaciones.vigencia_dias' => ['etiqueta' => 'Vigencia por defecto', 'tipo' => 'entero', 'inicial' => 15, 'min' => 1, 'max' => 90, 'unidad' => 'días', 'alcances' => self::GE],
                 ],
             ],
+            'inventario' => [
+                'nombre' => 'Inventario',
+                'grupo' => 'negocio', 'sensible' => false, 'edita' => 'Bodega y Finanzas',
+                'piso' => 'El kardex es solo inserción; toda merma queda con motivo y responsable.',
+                'parametros' => [
+                    'inventario.permitir_negativo' => ['etiqueta' => 'Permitir vender sin stock', 'tipo' => 'booleano', 'inicial' => false, 'alcances' => self::GEL],
+                    'inventario.merma_aprobacion_monto' => ['etiqueta' => 'Merma sin aprobación hasta', 'tipo' => 'entero', 'inicial' => 100000, 'min' => 0, 'max' => 100000000, 'unidad' => '$', 'estricto' => 'menor', 'alcances' => self::GE],
+                    'inventario.reserva_dias' => ['etiqueta' => 'Días de reserva de una orden de venta', 'tipo' => 'entero', 'inicial' => 7, 'min' => 1, 'max' => 60, 'unidad' => 'días', 'alcances' => self::GE],
+                ],
+            ],
             'metas' => [
                 'nombre' => 'Metas y comisiones',
                 'grupo' => 'negocio', 'sensible' => false, 'edita' => 'Gerencia Comercial',

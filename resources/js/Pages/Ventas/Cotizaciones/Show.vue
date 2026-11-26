@@ -7,7 +7,7 @@ import Modal from '@/Components/Modal.vue';
 import Campo from '@/Components/Campo.vue';
 import MenuAcciones from '@/Components/MenuAcciones.vue';
 import { fecha, pesos, rut } from '@/lib/formato';
-import { estadoCot, estadoDoc } from '@/lib/documentos';
+import { estadoCot, estadoDoc, estadoOrden } from '@/lib/documentos';
 import { usePermisos } from '@/lib/permisos';
 
 interface Linea { descripcion: string; codigo: string | null; cantidad: string; unidad: string; precio_unitario: string; precio_lista: string | null; descuento_pct: string; descuento_monto: number; monto_item: number; exento: boolean }
@@ -18,8 +18,9 @@ interface Cot {
     descuento_global_pct: string; descuento_global_monto: number; neto: number; exento: number; iva: number; total: number; tasa_iva: string;
     observaciones: string | null; motivo_rechazo: string | null; motivos: string[]; aprobado: boolean; propia: boolean; creador: string | null; aprobador: string | null; local: string | null;
     documento: { id: number; nombre: string; estado: string } | null; lineas: Linea[];
+    orden: { id: number; numero: number; estado: string } | null; local_id: number | null; tiene_cliente: boolean;
 }
-const props = defineProps<{ cotizacion: Cot; puedeFacturar: boolean }>();
+const props = defineProps<{ cotizacion: Cot; puedeFacturar: boolean; puedeOrden: boolean; locales: { id: number; nombre: string }[] }>();
 const puede = usePermisos();
 const page = usePage();
 const c = computed(() => props.cotizacion);
@@ -34,6 +35,9 @@ const rechazo = useForm({ motivo: '' });
 const rechazoAbierto = ref(false);
 const conversion = useForm({ tipo_dte: 33 });
 const convertirAbierto = ref(false);
+const orden = useForm({ local_id: props.cotizacion.local_id ?? props.locales[0]?.id ?? null });
+const ordenAbierto = ref(false);
+const puedeConfirmarOrden = computed(() => props.puedeOrden && ['enviada', 'aceptada'].includes(c.value.estado));
 
 const secundarias = computed(() => {
     const a: { etiqueta: string; peligro?: boolean; accion: () => void }[] = [];
@@ -52,10 +56,15 @@ const cifra = (v: string) => Number(v).toLocaleString('es-CL', { maximumFraction
         <button v-if="c.estado === 'por_aprobar' && puede('ventascrm.cotizacion.aprobar') && !c.propia" class="btn btn-primario" @click="aprobarAbierto = true">Aprobar</button>
         <button v-else-if="c.estado === 'borrador' && puede('ventascrm.cotizacion.editar')" class="btn btn-primario" @click="accion('enviar')">Marcar como enviada</button>
         <template v-else-if="c.estado === 'enviada' && puede('ventascrm.cotizacion.editar')">
+            <button v-if="puedeConfirmarOrden" class="btn btn-secundario" @click="ordenAbierto = true">Confirmar orden de venta</button>
             <button v-if="puedeFacturar" class="btn btn-secundario" @click="convertirAbierto = true">Convertir en venta</button>
             <button class="btn btn-primario" @click="accion('aceptar')">Cliente aceptó</button>
         </template>
-        <button v-else-if="c.estado === 'aceptada' && puedeFacturar && puede('ventascrm.cotizacion.editar')" class="btn btn-primario" @click="convertirAbierto = true">Convertir en venta</button>
+        <template v-else-if="c.estado === 'aceptada'">
+            <button v-if="puedeFacturar && puede('ventascrm.cotizacion.editar')" :class="puedeConfirmarOrden ? 'btn btn-secundario' : 'btn btn-primario'" @click="convertirAbierto = true">Convertir en venta</button>
+            <button v-if="puedeConfirmarOrden" class="btn btn-primario" @click="ordenAbierto = true">Confirmar orden de venta</button>
+        </template>
+        <Link v-if="c.orden" :href="`/ventas/ordenes/${c.orden.id}`" class="btn btn-primario no-underline">Ver orden N° {{ c.orden.numero }}</Link>
         <Link v-if="c.documento" :href="`/caja/documentos/${c.documento.id}`" class="btn btn-primario no-underline">Ver {{ c.documento.nombre }}</Link>
     </Encabezado>
 
@@ -63,10 +72,11 @@ const cifra = (v: string) => Number(v).toLocaleString('es-CL', { maximumFraction
         <Chip :tono="estadoCot[c.estado][0]">{{ estadoCot[c.estado][1] }}</Chip>
         <Chip v-if="c.forma_pago === 'credito'" tono="info">Crédito</Chip>
         <Chip v-if="c.aprobado" tono="ok">Aprobada por {{ c.aprobador }}</Chip>
+        <Chip v-if="c.orden" :tono="estadoOrden[c.orden.estado][0]">Orden N° {{ c.orden.numero }} · {{ estadoOrden[c.orden.estado][1] }}</Chip>
         <Chip v-if="c.documento" :tono="estadoDoc[c.documento.estado][0]">{{ c.documento.nombre }} · {{ estadoDoc[c.documento.estado][1] }}</Chip>
     </div>
 
-    <div v-if="errores.length && !aprobarAbierto && !rechazoAbierto && !convertirAbierto" role="alert" class="tarjeta mb-6 border-[#F1B5AE] bg-[#FDECEA] p-5 text-[#B42318]">
+    <div v-if="errores.length && !aprobarAbierto && !rechazoAbierto && !convertirAbierto && !ordenAbierto" role="alert" class="tarjeta mb-6 border-[#F1B5AE] bg-[#FDECEA] p-5 text-[#B42318]">
         <p class="font-semibold">No se pudo completar la acción:</p>
         <ul class="mt-1 list-disc pl-5"><li v-for="e in errores" :key="e">{{ e }}</li></ul>
     </div>
@@ -151,6 +161,19 @@ const cifra = (v: string) => Number(v).toLocaleString('es-CL', { maximumFraction
         <template #pie>
             <button class="btn btn-secundario" @click="convertirAbierto = false">Cancelar</button>
             <button class="btn btn-primario" :disabled="conversion.processing" @click="conversion.post(`/ventas/cotizaciones/${c.id}/convertir`)">Crear borrador</button>
+        </template>
+    </Modal>
+
+    <Modal :abierto="ordenAbierto" titulo="Confirmar orden de venta" @cerrar="ordenAbierto = false">
+        <p class="mb-4 text-[15px] text-grafito">Se verifica el stock disponible y, si es a crédito, el cupo del cliente. El stock queda reservado en el local hasta facturar.</p>
+        <p v-if="!c.tiene_cliente" class="mb-4 rounded-boton bg-[#FFF3D6] p-3 text-[#8A5A00]">La cotización es para un contacto sin ficha: registra al cliente y edítala antes de confirmar.</p>
+        <Campo etiqueta="Despachar desde" id="orden-local" obligatorio :error="orden.errors.local_id">
+            <select id="orden-local" v-model="orden.local_id" class="campo h-11"><option v-for="l in locales" :key="l.id" :value="l.id">{{ l.nombre }}</option></select>
+        </Campo>
+        <p v-for="k in ['stock', 'forma_pago', 'cotizacion']" v-show="(orden.errors as any)[k]" :key="k" class="error mt-3 whitespace-pre-line">{{ (orden.errors as any)[k] }}</p>
+        <template #pie>
+            <button class="btn btn-secundario" @click="ordenAbierto = false">Cancelar</button>
+            <button class="btn btn-primario" :disabled="orden.processing || !c.tiene_cliente" @click="orden.post(`/ventas/cotizaciones/${c.id}/orden`)">Confirmar y reservar</button>
         </template>
     </Modal>
 </template>
