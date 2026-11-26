@@ -118,6 +118,8 @@ class DocumentosController extends Controller
                 'creador' => $documento->creador?->name,
                 'local' => $documento->local?->nombre,
                 'propio' => $documento->creado_por === $request->user()->id,
+                'despacho' => \App\Modules\Inventario\Models\Despacho::where('documento_id', $documento->id)->where('estado', '<>', 'anulado')->first(['id', 'numero', 'estado']),
+                'devoluciones' => \App\Modules\Inventario\Models\Devolucion::where('documento_id', $documento->id)->orderBy('numero')->get(['id', 'numero', 'estado']),
             ],
             'medios' => array_intersect_key(Pago::METODOS, array_flip($this->parametros->valor('caja.medios', $documento->local_id))),
             'codigos' => DocumentoReferencia::CODIGOS,

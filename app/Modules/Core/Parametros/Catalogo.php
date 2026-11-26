@@ -303,6 +303,17 @@ class Catalogo
                     'inventario.permitir_negativo' => ['etiqueta' => 'Permitir vender sin stock', 'tipo' => 'booleano', 'inicial' => false, 'alcances' => self::GEL],
                     'inventario.merma_aprobacion_monto' => ['etiqueta' => 'Merma sin aprobación hasta', 'tipo' => 'entero', 'inicial' => 100000, 'min' => 0, 'max' => 100000000, 'unidad' => '$', 'estricto' => 'menor', 'alcances' => self::GE],
                     'inventario.reserva_dias' => ['etiqueta' => 'Días de reserva de una orden de venta', 'tipo' => 'entero', 'inicial' => 7, 'min' => 1, 'max' => 60, 'unidad' => 'días', 'alcances' => self::GE],
+                    'inventario.precio_variacion_pct' => ['etiqueta' => 'Variación de precio sin aprobación', 'tipo' => 'porcentaje', 'inicial' => 15, 'min' => 0, 'max' => 100, 'unidad' => '%', 'estricto' => 'menor', 'alcances' => self::GE],
+                    'inventario.devolucion_aprobacion_monto' => ['etiqueta' => 'Devolución sin aprobación hasta', 'tipo' => 'entero', 'inicial' => 0, 'min' => 0, 'max' => 100000000, 'unidad' => '$', 'estricto' => 'menor', 'alcances' => self::GE],
+                ],
+            ],
+            'despacho' => [
+                'nombre' => 'Parámetros de despacho',
+                'grupo' => 'negocio', 'sensible' => false, 'edita' => 'Logística',
+                'piso' => 'Un despacho entregado exige nombre de quien recibe y firma; el despacho gratis bajo el monto mínimo lo aprueba otra persona.',
+                'parametros' => [
+                    'despacho.tarifa_base' => ['etiqueta' => 'Cargo de despacho sugerido', 'tipo' => 'entero', 'inicial' => 5990, 'min' => 0, 'max' => 1000000, 'unidad' => '$', 'alcances' => self::GEL],
+                    'despacho.gratis_desde' => ['etiqueta' => 'Despacho gratis sin aprobación desde', 'tipo' => 'entero', 'inicial' => 150000, 'min' => 0, 'max' => 100000000, 'unidad' => '$', 'alcances' => self::GEL],
                 ],
             ],
             'metas' => [

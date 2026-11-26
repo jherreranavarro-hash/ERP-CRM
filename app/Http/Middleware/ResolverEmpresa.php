@@ -8,6 +8,7 @@ use App\Modules\Core\Tenancy\Tenancy;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -37,11 +38,14 @@ class ResolverEmpresa
 
         $request->session()->put('empresa_id', $empresa->id);
         $this->tenancy->establecer($empresa);
+        // Quién hace el cambio, para los registros que escribe la base de datos (historial de precios).
+        DB::select("select set_config('app.usuario_id', ?, false)", [(string) $user->id]);
 
         try {
             return $next($request);
         } finally {
             $this->tenancy->limpiar();
+            DB::select("select set_config('app.usuario_id', '', false)");
         }
     }
 

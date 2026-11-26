@@ -8,7 +8,7 @@ import Campo from '@/Components/Campo.vue';
 import MenuAcciones from '@/Components/MenuAcciones.vue';
 import Icono from '@/Components/Icono.vue';
 import { fecha, pesos, rut } from '@/lib/formato';
-import { estadoDoc, estadoSii } from '@/lib/documentos';
+import { estadoDoc, estadoSii, estadoDespacho, estadoDevolucion } from '@/lib/documentos';
 import { usePermisos } from '@/lib/permisos';
 
 interface Linea { descripcion: string; codigo: string | null; cantidad: string; unidad: string; precio_unitario: string; precio_lista: string | null; descuento_pct: string; descuento_monto: number; monto_item: number; exento: boolean }
@@ -22,6 +22,7 @@ interface Doc {
     lineas: Linea[]; referencias: { documento_referido_id: number; nombre: string; codigo: string | null; razon: string }[];
     pagos: { id: number; monto: number; metodo: string; fecha: string; usuario: string | null; referencia: string | null }[];
     notas: { id: number; nombre: string; total: number; estado: string; codigo: string | null }[];
+    despacho: { id: number; numero: number; estado: string } | null; devoluciones: { id: number; numero: number; estado: string }[];
 }
 const props = defineProps<{ documento: Doc; medios: Record<string, string>; codigos: Record<string, string> }>();
 const puede = usePermisos();
@@ -67,6 +68,11 @@ const accionesSecundarias = computed(() => {
         a.push({ etiqueta: 'Nota de crédito por texto', accion: () => abrirNota(61, 2) });
         a.push({ etiqueta: 'Nota de débito', accion: () => abrirNota(56, 3) });
     }
+    const vigente = ['emitido', 'pagado'].includes(d.value.estado);
+    if (vigente && [33, 34, 39, 41, 52].includes(d.value.tipo_dte) && !d.value.despacho && puede('inventario.despachos.crear'))
+        a.push({ etiqueta: 'Programar despacho', accion: () => router.visit(`/inventario/despachos/crear?documento_id=${d.value.id}`) });
+    if (vigente && [33, 34, 39, 41].includes(d.value.tipo_dte) && d.value.acreditable > 0 && (puede('inventario.devolucion.crear') || puede('caja.devolucion.crear')))
+        a.push({ etiqueta: 'Registrar devolución', accion: () => router.visit(`/inventario/devoluciones/crear?documento_id=${d.value.id}`) });
     if (borrador.value && puede('caja.facturas-de-ventas.eliminar')) a.push({ etiqueta: 'Eliminar borrador', peligro: true, accion: eliminar });
     return a;
 });
@@ -90,6 +96,8 @@ const cifra = (v: string) => Number(v).toLocaleString('es-CL', { maximumFraction
         <Chip v-if="d.estado_sii" :tono="estadoSii[d.estado_sii][0]">{{ estadoSii[d.estado_sii][1] }}</Chip>
         <Chip v-if="d.forma_pago === 'credito'" tono="info">Crédito{{ d.vencimiento ? ` · vence ${fecha(d.vencimiento)}` : '' }}</Chip>
         <Chip v-if="d.aprobado" tono="ok">Aprobado</Chip>
+        <Link v-if="d.despacho" :href="`/inventario/despachos/${d.despacho.id}`" class="no-underline"><Chip :tono="estadoDespacho[d.despacho.estado][0]">Despacho N° {{ d.despacho.numero }} · {{ estadoDespacho[d.despacho.estado][1] }}</Chip></Link>
+        <Link v-for="v in d.devoluciones" :key="v.id" :href="`/inventario/devoluciones/${v.id}`" class="no-underline"><Chip :tono="estadoDevolucion[v.estado][0]">Devolución N° {{ v.numero }} · {{ estadoDevolucion[v.estado][1] }}</Chip></Link>
     </div>
 
     <div v-if="errores.length && !pagoAbierto && !notaAbierta && !aprobarAbierto" role="alert" class="tarjeta mb-6 border-[#F1B5AE] bg-[#FDECEA] p-5 text-[#B42318]">

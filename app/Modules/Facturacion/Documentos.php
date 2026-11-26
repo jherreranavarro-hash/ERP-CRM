@@ -140,7 +140,7 @@ class Documentos
     }
 
     /** Prepara una NC (61) o ND (56) en borrador sobre un documento emitido. */
-    public function prepararNota(Documento $referido, int $tipo, int $codigo, string $razon, User $user, ?array $lineas = null): Documento
+    public function prepararNota(Documento $referido, int $tipo, int $codigo, string $razon, User $user, ?array $lineas = null, ?string $descuentoGlobal = null): Documento
     {
         if (! in_array($tipo, [56, 61], true)) {
             throw new InvalidArgumentException('Solo notas de crédito o débito.');
@@ -170,7 +170,7 @@ class Documentos
             'cliente_id' => $referido->cliente_id,
             'local_id' => $referido->local_id,
             'forma_pago' => 'contado',
-            'descuento_global_pct' => $codigo === 1 ? (string) $referido->descuento_global_pct : 0,
+            'descuento_global_pct' => $descuentoGlobal ?? ($codigo === 1 ? (string) $referido->descuento_global_pct : 0),
             'lineas' => $lineas,
             'referencias' => [['documento_referido_id' => $referido->id, 'codigo' => $codigo, 'razon' => $razon]],
         ], $user);

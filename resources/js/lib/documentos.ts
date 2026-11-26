@@ -50,3 +50,24 @@ export const estadoMerma: Record<string, [Tono, string]> = {
 
 /** Cantidad con decimales solo si los tiene. */
 export const cantidad = (v: number | string) => Number(v).toLocaleString('es-CL', { maximumFractionDigits: 3 });
+
+export const estadoCambioPrecio: Record<string, [Tono, string]> = {
+    por_aprobar: ['alerta', 'Por aprobar'],
+    aplicado: ['ok', 'Aplicado'],
+    rechazado: ['error', 'Rechazado'],
+};
+
+export const estadoDespacho: Record<string, [Tono, string]> = {
+    por_aprobar: ['alerta', 'Por aprobar'],
+    programado: ['neutro', 'Programado'],
+    en_ruta: ['info', 'En ruta'],
+    entregado: ['ok', 'Entregado'],
+    fallido: ['error', 'Entrega fallida'],
+    anulado: ['neutro', 'Anulado'],
+};
+
+export const estadoDevolucion: Record<string, [Tono, string]> = {
+    solicitada: ['alerta', 'Por aprobar'],
+    aprobada: ['ok', 'Aprobada'],
+    rechazada: ['error', 'Rechazada'],
+};

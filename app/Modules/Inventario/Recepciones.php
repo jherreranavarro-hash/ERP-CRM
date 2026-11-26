@@ -75,7 +75,8 @@ class Recepciones
             foreach ($rec->lineas as $l) {
                 $this->inventario->mover($l->producto_id, $rec->local_id, 'recepcion', (string) $l->cantidad, $user, (string) $l->costo_unitario, ['recepcion', $rec->id],
                     "Recepción N° {$rec->numero} · {$rec->proveedor_nombre}".($rec->documento_proveedor ? " · doc. {$rec->documento_proveedor}" : ''));
-                // Último costo de compra en la ficha del producto.
+                // Último costo de compra en la ficha del producto (queda en el historial como recepción).
+                DB::select("select set_config('app.origen_precio', 'recepcion', true)");
                 Producto::whereKey($l->producto_id)->update(['costo' => (string) $l->costo_unitario]);
             }
             $rec->forceFill(['estado' => 'confirmada', 'confirmado_por' => $user->id, 'confirmado_at' => now()])->save();

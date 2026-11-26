@@ -5,6 +5,7 @@ namespace App\Modules\Inventario\Escuchas;
 use App\Modules\Facturacion\Eventos\DocumentoEmitido;
 use App\Modules\Facturacion\Models\Documento;
 use App\Modules\Inventario\Inventario;
+use App\Modules\Inventario\Models\Devolucion;
 use App\Modules\Inventario\Models\MovimientoStock;
 use App\Modules\Ventas\Models\OrdenVenta;
 
@@ -39,8 +40,25 @@ class MoverStockAlEmitir
             return;
         }
 
-        // NC que anula (código 1): reingresa lo que salió por la venta original, al mismo costo.
         $ref = $doc->referencias->first();
+        if ($doc->tipo_dte !== 61 || ! $ref?->documento_referido_id) {
+            return;
+        }
+
+        // NC de una devolución: reingresa solo lo devuelto (y que vuelve a la venta), al costo con que salió.
+        $devolucion = Devolucion::with('lineas')->where('nota_credito_id', $doc->id)->first();
+        if ($devolucion) {
+            $costos = MovimientoStock::where('origen_tipo', 'documento')->where('origen_id', $ref->documento_referido_id)->where('tipo', 'venta')->pluck('costo_unitario', 'producto_id');
+            foreach ($devolucion->lineas->where('reingresa', true)->whereNotNull('producto_id')->groupBy('producto_id') as $pid => $ls) {
+                $cant = $ls->reduce(fn ($c, $l) => $c->plus((string) $l->cantidad), \Brick\Math\BigDecimal::zero());
+                $this->inventario->mover($pid, $devolucion->local_id, 'devolucion', (string) $cant, $e->usuario, isset($costos[$pid]) ? (string) $costos[$pid] : null,
+                    ['documento', $doc->id], 'Devolución N° '.$devolucion->numero.' · '.$doc->nombre());
+            }
+
+            return;
+        }
+
+        // NC que anula (código 1): reingresa lo que salió por la venta original, al mismo costo.
         if ($doc->tipo_dte === 61 && $ref?->codigo === 1 && $ref->documento_referido_id) {
             $salidas = MovimientoStock::where('origen_tipo', 'documento')->where('origen_id', $ref->documento_referido_id)->where('tipo', 'venta')->get();
             foreach ($salidas as $m) {
