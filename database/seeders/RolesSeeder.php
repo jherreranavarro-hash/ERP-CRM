@@ -15,7 +15,7 @@ class RolesSeeder extends Seeder
         $roles = [
             ['Administrador del sistema', 'superadmin', ['*'], []],
             ['Gerente', 'gerencia', ['dashboard.*', '*.ver', '*.exportar', '*.aprobar'], ['configuracion.parametros.proponer']],
-            ['Analista de Finanzas', 'finanzas', ['dashboard.*', 'finanzas.*', 'caja.cierres-de-caja.*', 'configuracion.cuentas-corrientes.*'], ['configuracion.parametros.ver', 'configuracion.parametros.proponer']],
+            ['Analista de Finanzas', 'finanzas', ['dashboard.*', 'finanzas.*', 'caja.cierres-de-caja.*', 'configuracion.cuentas-corrientes.*', 'configuracion.folios.*'], ['configuracion.parametros.ver', 'configuracion.parametros.proponer', 'configuracion.clientes.ver']],
             ['Analista de RRHH', 'rrhh', ['rrhh.*'], []],
             ['Cajera', 'caja', ['caja.*', '!caja.*.aprobar'], ['ventascrm.cotizacion.ver', 'configuracion.clientes.ver', 'configuracion.clientes.crear', 'configuracion.producto.ver']],
             ['Ejecutiva comercial', 'ventas', ['dashboard.*', 'ventascrm.dashboard.*', 'ventascrm.cotizacion.*', 'ventascrm.orden-de-venta.*', 'ventascrm.cuentas-corrientes.*', 'inventario.stock.ver'], ['caja.facturas-de-ventas.ver', 'caja.facturas-de-ventas.crear', 'caja.facturas-de-ventas.editar', 'configuracion.clientes.ver', 'configuracion.producto.ver']],
