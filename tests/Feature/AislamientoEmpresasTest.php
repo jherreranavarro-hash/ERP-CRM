@@ -58,4 +58,19 @@ class AislamientoEmpresasTest extends TestCase
         $this->entrar($u)->get('/')->assertOk()
             ->assertInertia(fn ($p) => $p->where('empresa.actual.id', $propia->id));
     }
+
+    public function test_las_rutas_con_modelo_resuelven_dentro_de_la_empresa_activa(): void
+    {
+        $a = $this->empresa();
+        $b = $this->empresa();
+        $u = $this->usuario($a, 'Administrador del sistema', superadmin: true);
+        $propio = app(Tenancy::class)->como($a, fn () => Local::create(['codigo' => 'P1', 'nombre' => 'Propio']));
+        $ajeno = app(Tenancy::class)->como($b, fn () => Local::create(['codigo' => 'X1', 'nombre' => 'Ajeno']));
+
+        $this->entrar($u)->put("/configuracion/locales/{$propio->id}", ['codigo' => 'P1', 'nombre' => 'Renombrado'])->assertSessionHasNoErrors()->assertRedirect();
+        $this->entrar($u)->put("/configuracion/locales/{$ajeno->id}", ['codigo' => 'X1', 'nombre' => 'Hackeado'])->assertNotFound();
+
+        app(Tenancy::class)->establecer($a);
+        $this->assertSame('Renombrado', $propio->fresh()->nombre);
+    }
 }

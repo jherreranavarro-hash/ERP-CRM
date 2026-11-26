@@ -30,6 +30,9 @@ return Application::configure(basePath: dirname(__DIR__))
             ControlSesion::class,
             Exigir2FA::class,
         ]);
+        // La empresa activa se fija antes de resolver los modelos de la ruta:
+        // con RLS, un {documento} buscado sin empresa no existe.
+        $middleware->prependToPriorityList(\Illuminate\Routing\Middleware\SubstituteBindings::class, ResolverEmpresa::class);
         $middleware->alias([
             'permiso' => VerificarPermiso::class,
             'token.api' => AutenticarTokenApi::class,
