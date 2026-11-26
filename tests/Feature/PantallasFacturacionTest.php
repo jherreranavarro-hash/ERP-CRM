@@ -21,6 +21,7 @@ class PantallasFacturacionTest extends TestCase
         $pid = app(Tenancy::class)->como($e, function () use ($jefe) {
             app(Parametros::class)->proponer('modulos.facturacion', true, 'empresa', 'Pruebas', $jefe);
             FolioRango::create(['tipo_dte' => 39, 'desde' => 1, 'hasta' => 10, 'siguiente' => 1]);
+            \App\Modules\Caja\Models\Caja::create(['local_id' => \App\Modules\Core\Models\Local::create(['codigo' => 'L1', 'nombre' => 'Local'])->id, 'nombre' => 'Caja 1']);
 
             return Producto::create(['sku' => 'P', 'nombre' => 'Pala', 'precio_neto' => '10000'])->id;
         });
@@ -39,6 +40,10 @@ class PantallasFacturacionTest extends TestCase
         $this->entrar($cajera)->post("/caja/documentos/{$doc->id}/emitir")->assertSessionHasNoErrors();
         $doc = app(Tenancy::class)->como($e, fn () => $doc->fresh());
         $this->assertSame([1, 'emitido', 9520], [$doc->folio, $doc->estado, $doc->monto_total]);   // 11.900 − 20 % = 9.520
+        // Sin turno abierto no cobra en efectivo; abre el turno y cobra.
+        $this->entrar($cajera)->post("/caja/documentos/{$doc->id}/pagos", ['monto' => 9520, 'metodo' => 'efectivo'])->assertSessionHasErrors('metodo');
+        $cajaId = app(Tenancy::class)->como($e, fn () => \App\Modules\Caja\Models\Caja::value('id'));
+        $this->entrar($cajera)->post('/caja/turno/abrir', ['caja_id' => $cajaId, 'monto_apertura' => 20000])->assertSessionHasNoErrors();
         $this->entrar($cajera)->post("/caja/documentos/{$doc->id}/pagos", ['monto' => 9520, 'metodo' => 'efectivo'])->assertSessionHasNoErrors();
         $this->assertSame('pagado', app(Tenancy::class)->como($e, fn () => $doc->fresh()->estado));
     }
@@ -48,7 +53,8 @@ class PantallasFacturacionTest extends TestCase
         $e = $this->empresa();
         $u = $this->usuario($e, 'Administrador del sistema', superadmin: true);
 
-        foreach (['/caja/documentos', '/caja/documentos/crear', '/configuracion/clientes', '/configuracion/productos', '/configuracion/folios', '/finanzas/libro-de-ventas', '/finanzas/cuentas-por-cobrar'] as $ruta) {
+        foreach (['/caja/documentos', '/caja/documentos/crear', '/configuracion/clientes', '/configuracion/productos', '/configuracion/folios', '/finanzas/libro-de-ventas', '/finanzas/cuentas-por-cobrar',
+            '/ventas/cotizaciones', '/ventas/cotizaciones/crear', '/caja/turno', '/caja/cierres'] as $ruta) {
             $this->entrar($u)->get($ruta)->assertOk();
         }
     }

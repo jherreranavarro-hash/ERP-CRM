@@ -77,6 +77,11 @@ class Documento extends Model
         return $this->belongsTo(Cliente::class)->withTrashed();
     }
 
+    public function cotizacion(): BelongsTo
+    {
+        return $this->belongsTo(\App\Modules\Ventas\Models\Cotizacion::class);
+    }
+
     public function local(): BelongsTo
     {
         return $this->belongsTo(Local::class);

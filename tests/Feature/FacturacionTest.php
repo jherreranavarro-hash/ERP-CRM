@@ -243,8 +243,16 @@ class FacturacionTest extends TestCase
     {
         $f = $this->docs->emitir($this->factura(), $this->cajera);
 
-        $this->docs->registrarPago($f, 20000, 'transferencia', $this->cajera);
+        $this->docs->registrarPago($f, 20000, 'transferencia', $this->cajera);   // sin turno: no es presencial
         $this->assertSame('emitido', $f->fresh()->estado);
+        try {
+            $this->docs->registrarPago($f, 39381, 'debito', $this->cajera);
+            $this->fail('Una tarjeta sin turno abierto debía rechazarse.');
+        } catch (ValidationException $e) {
+            $this->assertStringContainsString('turno', $e->getMessage());
+        }
+        $caja = \App\Modules\Caja\Models\Caja::create(['local_id' => \App\Modules\Core\Models\Local::create(['codigo' => 'L1', 'nombre' => 'Local'])->id, 'nombre' => 'Caja 1']);
+        app(\App\Modules\Caja\Turnos::class)->abrir($caja, 0, $this->cajera);
         $this->docs->registrarPago($f, 39381, 'debito', $this->cajera);
         $this->assertSame('pagado', $f->fresh()->estado);
         $this->assertSame(0, $f->fresh()->saldo);

@@ -95,6 +95,9 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => 'prefer',
+            // Misma zona que la app: Laravel escribe fechas sin offset, y una columna
+            // timestamptz las interpretaría en la zona de la sesión (UTC por defecto).
+            'timezone' => env('APP_TIMEZONE', 'UTC'),
         ],
 
         // Conexión del dueño del esquema: solo para migraciones y semillas.
@@ -112,6 +115,7 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => 'prefer',
+            'timezone' => env('APP_TIMEZONE', 'UTC'),
         ],
 
         'sqlsrv' => [

@@ -287,6 +287,14 @@ class Catalogo
                     'caja.cierre_por_turno' => ['etiqueta' => 'Apertura y cierre por turno', 'tipo' => 'booleano', 'inicial' => true, 'alcances' => self::GEL],
                 ],
             ],
+            'cotizaciones' => [
+                'nombre' => 'Cotizaciones',
+                'grupo' => 'negocio', 'sensible' => false, 'edita' => 'Gerencia Comercial',
+                'piso' => 'Una cotización vencida no se convierte sin renovarla.',
+                'parametros' => [
+                    'cotizaciones.vigencia_dias' => ['etiqueta' => 'Vigencia por defecto', 'tipo' => 'entero', 'inicial' => 15, 'min' => 1, 'max' => 90, 'unidad' => 'días', 'alcances' => self::GE],
+                ],
+            ],
             'metas' => [
                 'nombre' => 'Metas y comisiones',
                 'grupo' => 'negocio', 'sensible' => false, 'edita' => 'Gerencia Comercial',

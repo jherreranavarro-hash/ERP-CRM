@@ -12,7 +12,7 @@ El desarrollo avanza por fases, cada una en su propio pull request:
 |---|---|
 | 1 | Base: login seguro, 2FA, sesiones, multiempresa con RLS, RBAC, trazabilidad inmutable, 28 mantenedores con pisos de seguridad, tokens de API |
 | 2 | Facturación CLP / SII: clientes, productos, folios, boletas, facturas, guías, NC/ND con aprobaciones y proveedor DTE simulado; libro de ventas, cuentas por cobrar y API v1 de ventas |
-| 2b | Cotización → documento, apertura y cierre de caja |
+| 2b | Cotizaciones (aprobación, envío, vigencia y conversión a factura o boleta) y turnos de caja con cuadratura por medio de pago |
 | 3 | Resto de módulos (compras, inventario, RRHH, finanzas, contact center) |
 | 4 | Integraciones reales (SII, PBX, Meta) detrás de interfaces |
 
