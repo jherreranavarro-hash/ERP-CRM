@@ -28,12 +28,16 @@ class Contabilidad
         ['1.1.03', 'Clientes', 'activo', 'clientes'],
         ['1.1.04', 'IVA crédito fiscal', 'activo', 'iva_credito'],
         ['1.1.05', 'Mercaderías', 'activo', 'inventario'],
+        ['1.1.06', 'Préstamos al personal', 'activo', 'prestamos_personal'],
         ['1.2.01', 'Activo fijo', 'activo', null],
         ['2.1.01', 'Proveedores', 'pasivo', 'proveedores'],
         ['2.1.02', 'IVA débito fiscal', 'pasivo', 'iva_debito'],
         ['2.1.03', 'Retención de honorarios por pagar', 'pasivo', 'retencion_honorarios'],
         ['2.1.04', 'Honorarios por pagar', 'pasivo', 'honorarios_por_pagar'],
         ['2.1.05', 'Remuneraciones por pagar', 'pasivo', 'remuneraciones_por_pagar'],
+        ['2.1.06', 'Cotizaciones previsionales por pagar', 'pasivo', 'leyes_sociales_por_pagar'],
+        ['2.1.07', 'Impuesto único por pagar', 'pasivo', 'impuesto_unico_por_pagar'],
+        ['2.1.08', 'Finiquitos por pagar', 'pasivo', 'finiquitos_por_pagar'],
         ['3.1.01', 'Capital', 'patrimonio', 'capital'],
         ['3.1.02', 'Resultados acumulados', 'patrimonio', 'resultados_acumulados'],
         ['4.1.01', 'Ventas', 'ingreso', 'ventas'],
@@ -41,6 +45,8 @@ class Contabilidad
         ['5.1.01', 'Costo de ventas', 'gasto', 'costo_ventas'],
         ['5.1.02', 'Honorarios', 'gasto', 'honorarios'],
         ['5.1.03', 'Remuneraciones', 'gasto', 'remuneraciones'],
+        ['5.1.06', 'Leyes sociales del empleador', 'gasto', 'leyes_sociales'],
+        ['5.1.07', 'Indemnizaciones', 'gasto', 'indemnizaciones'],
         ['5.1.04', 'Gastos generales', 'gasto', 'gastos_generales'],
         ['5.1.05', 'Gastos bancarios', 'gasto', 'gastos_bancarios'],
     ];
@@ -50,16 +56,20 @@ class Contabilidad
     /** Crea el plan de cuentas inicial de la empresa si aún no tiene uno. */
     public function asegurarPlan(): void
     {
-        if (CuentaContable::exists()) {
+        // Crea el plan si no existe y agrega las cuentas automáticas que módulos nuevos necesitan.
+        $claves = array_filter(array_column(self::PLAN, 3));
+        if (CuentaContable::whereIn('clave', $claves)->count() === count($claves)) {
             return;
         }
-        DB::transaction(function () {
+        DB::transaction(function () use ($claves) {
             DB::select('SELECT pg_advisory_xact_lock(hashtext(?))', ['plan_cuentas:'.$this->tenancy->id()]);
-            if (CuentaContable::exists()) {
-                return;
-            }
+            $nuevo = ! CuentaContable::exists();
+            $hay = CuentaContable::whereIn('clave', $claves)->pluck('clave')->all();
+            $codigos = CuentaContable::pluck('codigo')->all();
             foreach (self::PLAN as [$codigo, $nombre, $tipo, $clave]) {
-                CuentaContable::create(compact('codigo', 'nombre', 'tipo', 'clave'));
+                if ($nuevo || ($clave && ! in_array($clave, $hay, true) && ! in_array($codigo, $codigos, true))) {
+                    CuentaContable::create(compact('codigo', 'nombre', 'tipo', 'clave'));
+                }
             }
         });
     }

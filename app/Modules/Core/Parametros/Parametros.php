@@ -275,6 +275,20 @@ class Parametros
 
                 return $valor == (int) $valor ? (int) $valor : $valor;
 
+            case 'decimal':
+                if (! is_numeric($valor)) {
+                    $err('Debe ser un número.');
+                }
+                $valor = round((float) $valor, 4);
+                if ($min !== null && $valor < $min) {
+                    $err("El mínimo permitido es {$min}.");
+                }
+                if ($max !== null && $valor > $max) {
+                    $err("El máximo permitido es {$max}.");
+                }
+
+                return $valor == (int) $valor ? (int) $valor : $valor;
+
             case 'booleano':
                 $valor = filter_var($valor, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
                 if ($valor === null) {
@@ -360,7 +374,7 @@ class Parametros
     private function validarNoMasLaxoQueGlobal(string $clave, array $def, mixed $valor): void
     {
         $estricto = $def['estricto'] ?? null;
-        if (! $estricto || ! in_array($def['tipo'], ['entero', 'porcentaje'], true)) {
+        if (! $estricto || ! in_array($def['tipo'], ['entero', 'decimal', 'porcentaje'], true)) {
             return;
         }
         $global = $this->valorEnAlcance($clave, 'global') ?? $def['inicial'];

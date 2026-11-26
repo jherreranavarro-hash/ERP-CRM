@@ -10,7 +10,7 @@ namespace App\Modules\Core\Parametros;
  * Parametros::valor('clave'), que resuelve local → empresa → global → inicial.
  *
  * Claves de cada parámetro:
- *  - etiqueta, tipo: entero | booleano | texto | lista | opcion | multiple | porcentaje | escalones
+ *  - etiqueta, tipo: entero | decimal | booleano | texto | lista | opcion | multiple | porcentaje | escalones
  *  - inicial: valor por defecto
  *  - min / max: rango permitido (el piso de seguridad se expresa aquí)
  *  - opciones: para opcion / multiple
@@ -315,6 +315,38 @@ class Catalogo
                 'parametros' => [
                     'contabilidad.cierre_hasta' => ['etiqueta' => 'Período cerrado hasta (AAAA-MM-DD)', 'tipo' => 'texto', 'inicial' => '', 'alcances' => self::GE],
                     'conciliacion.dias_tolerancia' => ['etiqueta' => 'Días de diferencia tolerados al conciliar', 'tipo' => 'entero', 'inicial' => 3, 'min' => 0, 'max' => 15, 'unidad' => 'días', 'alcances' => self::GE],
+                ],
+            ],
+            'nomina' => [
+                'nombre' => 'Parámetros de nómina',
+                'grupo' => 'negocio', 'sensible' => true, 'edita' => 'RRHH + Finanzas',
+                'piso' => 'Los indicadores (UF, UTM, sueldo mínimo, topes y tasas) se actualizan aquí, nunca en el código; cada nómina guarda los valores con que se calculó. La tabla del impuesto único (tramos en UTM, art. 43 LIR) es legal y está en el motor.',
+                'parametros' => [
+                    'nomina.uf' => ['etiqueta' => 'Valor UF del mes', 'tipo' => 'decimal', 'inicial' => 39900.00, 'min' => 1, 'max' => 1000000, 'unidad' => '$', 'alcances' => self::G, 'ayuda' => 'Último día del mes de la remuneración.'],
+                    'nomina.utm' => ['etiqueta' => 'Valor UTM del mes', 'tipo' => 'entero', 'inicial' => 69500, 'min' => 1, 'max' => 1000000, 'unidad' => '$', 'alcances' => self::G],
+                    'nomina.imm' => ['etiqueta' => 'Ingreso mínimo mensual', 'tipo' => 'entero', 'inicial' => 539000, 'min' => 1, 'max' => 10000000, 'unidad' => '$', 'alcances' => self::G],
+                    'nomina.tope_afp_uf' => ['etiqueta' => 'Tope imponible AFP y salud', 'tipo' => 'decimal', 'inicial' => 89.9, 'min' => 1, 'max' => 500, 'unidad' => 'UF', 'alcances' => self::G],
+                    'nomina.tope_cesantia_uf' => ['etiqueta' => 'Tope imponible seguro de cesantía', 'tipo' => 'decimal', 'inicial' => 135.1, 'min' => 1, 'max' => 500, 'unidad' => 'UF', 'alcances' => self::G],
+                    'nomina.tope_indemnizacion_uf' => ['etiqueta' => 'Tope de remuneración para indemnizaciones', 'tipo' => 'decimal', 'inicial' => 90, 'min' => 1, 'max' => 500, 'unidad' => 'UF', 'alcances' => self::G],
+                    'nomina.afp_capital' => ['etiqueta' => 'AFP Capital (10% + comisión)', 'tipo' => 'porcentaje', 'inicial' => 11.44, 'min' => 10, 'max' => 15, 'unidad' => '%', 'alcances' => self::G],
+                    'nomina.afp_cuprum' => ['etiqueta' => 'AFP Cuprum', 'tipo' => 'porcentaje', 'inicial' => 11.44, 'min' => 10, 'max' => 15, 'unidad' => '%', 'alcances' => self::G],
+                    'nomina.afp_habitat' => ['etiqueta' => 'AFP Habitat', 'tipo' => 'porcentaje', 'inicial' => 11.27, 'min' => 10, 'max' => 15, 'unidad' => '%', 'alcances' => self::G],
+                    'nomina.afp_modelo' => ['etiqueta' => 'AFP Modelo', 'tipo' => 'porcentaje', 'inicial' => 10.58, 'min' => 10, 'max' => 15, 'unidad' => '%', 'alcances' => self::G],
+                    'nomina.afp_planvital' => ['etiqueta' => 'AFP PlanVital', 'tipo' => 'porcentaje', 'inicial' => 11.16, 'min' => 10, 'max' => 15, 'unidad' => '%', 'alcances' => self::G],
+                    'nomina.afp_provida' => ['etiqueta' => 'AFP ProVida', 'tipo' => 'porcentaje', 'inicial' => 11.45, 'min' => 10, 'max' => 15, 'unidad' => '%', 'alcances' => self::G],
+                    'nomina.afp_uno' => ['etiqueta' => 'AFP Uno', 'tipo' => 'porcentaje', 'inicial' => 10.46, 'min' => 10, 'max' => 15, 'unidad' => '%', 'alcances' => self::G],
+                    'nomina.salud_pct' => ['etiqueta' => 'Cotización legal de salud', 'tipo' => 'porcentaje', 'inicial' => 7, 'min' => 7, 'max' => 7, 'unidad' => '%', 'alcances' => self::G],
+                    'nomina.cesantia_trabajador_pct' => ['etiqueta' => 'Seguro de cesantía, trabajador (indefinido)', 'tipo' => 'porcentaje', 'inicial' => 0.6, 'min' => 0, 'max' => 5, 'unidad' => '%', 'alcances' => self::G],
+                    'nomina.cesantia_empleador_indefinido_pct' => ['etiqueta' => 'Seguro de cesantía, empleador (indefinido)', 'tipo' => 'porcentaje', 'inicial' => 2.4, 'min' => 0, 'max' => 5, 'unidad' => '%', 'alcances' => self::G],
+                    'nomina.cesantia_empleador_plazo_pct' => ['etiqueta' => 'Seguro de cesantía, empleador (plazo fijo u obra)', 'tipo' => 'porcentaje', 'inicial' => 3, 'min' => 0, 'max' => 5, 'unidad' => '%', 'alcances' => self::G],
+                    'nomina.sis_pct' => ['etiqueta' => 'Seguro de invalidez y sobrevivencia (empleador)', 'tipo' => 'porcentaje', 'inicial' => 1.88, 'min' => 0, 'max' => 5, 'unidad' => '%', 'alcances' => self::G],
+                    'nomina.aporte_empleador_pct' => ['etiqueta' => 'Cotización adicional del empleador (reforma de pensiones)', 'tipo' => 'porcentaje', 'inicial' => 1, 'min' => 0, 'max' => 10, 'unidad' => '%', 'alcances' => self::G, 'ayuda' => 'Ley 21.735: sube gradualmente; actualizar según el calendario vigente.'],
+                    'nomina.mutual_pct' => ['etiqueta' => 'Seguro de accidentes del trabajo (empleador)', 'tipo' => 'porcentaje', 'inicial' => 0.93, 'min' => 0.9, 'max' => 7, 'unidad' => '%', 'alcances' => self::GE],
+                    'nomina.jornada_maxima' => ['etiqueta' => 'Jornada ordinaria máxima semanal', 'tipo' => 'entero', 'inicial' => 42, 'min' => 40, 'max' => 45, 'unidad' => 'horas', 'alcances' => self::G, 'ayuda' => 'Ley 21.561 (40 horas): 42 desde abril de 2026, 40 desde abril de 2028.'],
+                    'nomina.recargo_horas_extra_pct' => ['etiqueta' => 'Recargo de horas extraordinarias', 'tipo' => 'porcentaje', 'inicial' => 50, 'min' => 50, 'max' => 200, 'unidad' => '%', 'alcances' => self::GE, 'estricto' => 'mayor'],
+                    'nomina.max_horas_extra_dia' => ['etiqueta' => 'Máximo de horas extra por día', 'tipo' => 'entero', 'inicial' => 2, 'min' => 0, 'max' => 2, 'unidad' => 'horas', 'alcances' => self::GE, 'estricto' => 'menor'],
+                    'nomina.prestamo_max_cuota_pct' => ['etiqueta' => 'Cuota máxima de préstamo sobre el sueldo', 'tipo' => 'porcentaje', 'inicial' => 15, 'min' => 1, 'max' => 15, 'unidad' => '%', 'alcances' => self::GE, 'estricto' => 'menor', 'ayuda' => 'Art. 58 del Código del Trabajo: los descuentos voluntarios no superan el 15% de la remuneración.'],
+                    'rrhh.dias_aviso_contrato' => ['etiqueta' => 'Aviso de vencimiento de contratos', 'tipo' => 'entero', 'inicial' => 30, 'min' => 1, 'max' => 90, 'unidad' => 'días', 'alcances' => self::GE],
                 ],
             ],
             'compras' => [
