@@ -50,6 +50,10 @@ class CabecerasSeguridad
         $dev = app()->isLocal() && is_file(public_path('hot')) ? trim((string) file_get_contents(public_path('hot'))) : null;
         $devWs = $dev ? preg_replace('#^http#', 'ws', $dev) : null;
         $extra = fn (string $p) => implode(' ', $this->parametros->valor($p));
+        // Servidor de tiempo real (Reverb) para el wallboard del contact center.
+        $rt = config('broadcasting.default') === 'reverb' && config('broadcasting.connections.reverb.options.host')
+            ? (config('broadcasting.connections.reverb.options.scheme') === 'https' ? 'wss://' : 'ws://').config('broadcasting.connections.reverb.options.host').':'.config('broadcasting.connections.reverb.options.port')
+            : null;
 
         return implode('; ', array_filter([
             "default-src 'self'",
@@ -58,7 +62,7 @@ class CabecerasSeguridad
             "style-src 'self' 'unsafe-inline' {$dev}",
             "img-src 'self' data: blob: ".$extra('cabeceras.csp_imagenes'),
             "font-src 'self' data: {$dev}",
-            "connect-src 'self' {$dev} {$devWs} ".$extra('cabeceras.csp_conexiones'),
+            "connect-src 'self' {$dev} {$devWs} {$rt} ".$extra('cabeceras.csp_conexiones'),
             ($f = $extra('cabeceras.csp_frames')) ? "frame-src {$f}" : "frame-src 'none'",
             "frame-ancestors 'none'",
             "form-action 'self'",

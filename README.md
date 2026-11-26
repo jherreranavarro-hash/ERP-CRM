@@ -19,6 +19,7 @@ El desarrollo avanza por fases, cada una en su propio pull request:
 | 3d | Finanzas: plan de cuentas y libro diario con partida doble validada en la base de datos (asientos inmutables, se revierten), asientos automáticos desde ventas, cobros, compras, pagos y honorarios; balance de comprobación, estado de resultados, balance general y libro mayor; centros de costo; conciliación bancaria con importación de cartolas CSV y calce automático; libro de honorarios con retención; flujo de caja proyectado a 30/60/90 días |
 | 3e | RRHH: ficha de personal con documentos cifrados, contratos desde plantillas con firma electrónica (simulada), turnos, asistencia con importación de reloj control y tope de horas extra, vacaciones con saldo por antigüedad y feriado progresivo, nómina con AFP, salud, cesantía e impuesto único (liquidación en PDF y asiento contable), préstamos y anticipos descontados por nómina, comisiones por categoría, finiquitos con indemnizaciones, cumplimiento normativo e indicadores; todo lo que mueve dinero se aprueba con cuatro ojos |
 | 3f | Dashboards: Dashboard CRM (ventas netas con variación, resultado contable del período, margen bruto real por costo de salida, cotizaciones, conversión, cobertura de cartera, mix de margen por categoría y mapa de actividad por ejecutivo), dashboard comercial por ejecutivo (ventas, ticket, conversión, cotizaciones abiertas, comisiones) y cuentas corrientes por cliente con cartola; agregados cacheados en Redis con invalidación por evento |
+| 4a | Contact center: agentes (extensión, habilidades, zonas, capacidad, cola), consola del agente con estados, discado, tipificación y guion paso a paso; campañas con metas, horario de discado, carga CSV y lista negra; asignación rotativa, por zona o por carga; tiempo real por WebSocket (Laravel Reverb) con números enmascarados; colas, IVR, números entrantes y proveedores IP con secreto cifrado; auditoría de calidad con checklist y criterios críticos; grabaciones con permiso nominativo, motivo, registro inmutable y enlace de un solo uso. La central va detrás de una interfaz (`Pbx`) con una implementación simulada y un webhook firmado con HMAC |
 | 3 | Resto de módulos (RRHH, contabilidad y tesorería, contact center) |
 | 4 | Integraciones reales (SII, PBX, Meta) detrás de interfaces |
 
@@ -51,6 +52,12 @@ al primer ingreso.
 En producción, programa el scheduler (`php artisan schedule:run` cada minuto) y un worker de colas
 (`php artisan queue:work`): el envío al proveedor DTE va por cola y se reintenta cada 15 minutos
 si el proveedor no responde. El scheduler también desactiva usuarios inactivos.
+
+El tablero de tiempo real del contact center usa Laravel Reverb. Para verlo en vivo, define
+`BROADCAST_CONNECTION=reverb` y las variables `REVERB_*` en `.env`, y levanta `php artisan reverb:start`.
+Sin Reverb, la pantalla muestra la foto al abrirla. La central telefónica es simulada (`PbxSimulada`)
+hasta configurar un proveedor IP; los eventos reales llegan a `POST /api/pbx/eventos` firmados con
+`PBX_WEBHOOK_SECRET`.
 
 La facturación se activa por empresa en Parámetros → Módulos y funcionalidades. El proveedor DTE
 es simulado (`ProveedorDteSimulado`): los documentos no tienen validez tributaria hasta enlazar

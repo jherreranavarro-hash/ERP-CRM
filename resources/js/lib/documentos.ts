@@ -130,3 +130,48 @@ export const estadoFiniquito: Record<string, [Tono, string]> = {
     firmado: ['ok', 'Firmado y pagado'],
     anulado: ['neutro', 'Anulado'],
 };
+
+export const estadoAgente: Record<string, [Tono, string]> = {
+    disponible: ['ok', 'Disponible'],
+    en_llamada: ['info', 'En llamada'],
+    pausa: ['alerta', 'En pausa'],
+    desconectado: ['neutro', 'Desconectado'],
+};
+
+export const estadoCampana: Record<string, [Tono, string]> = {
+    borrador: ['neutro', 'Borrador'],
+    activa: ['ok', 'Activa'],
+    pausada: ['alerta', 'Pausada'],
+    terminada: ['neutro', 'Terminada'],
+};
+
+export const estadoLead: Record<string, [Tono, string]> = {
+    nuevo: ['neutro', 'Nuevo'],
+    asignado: ['info', 'Asignado'],
+    contactado: ['info', 'Contactado'],
+    interesado: ['alerta', 'Interesado'],
+    cotizado: ['alerta', 'Cotizado'],
+    ganado: ['ok', 'Ganado'],
+    perdido: ['error', 'Perdido'],
+    no_contactar: ['error', 'No contactar'],
+};
+
+export const estadoLlamada: Record<string, [Tono, string]> = {
+    marcando: ['alerta', 'Marcando'],
+    en_cola: ['alerta', 'En cola'],
+    en_curso: ['info', 'En curso'],
+    terminada: ['ok', 'Terminada'],
+    no_contesta: ['neutro', 'No contesta'],
+    ocupado: ['neutro', 'Ocupado'],
+    fallida: ['error', 'Fallida'],
+};
+
+export const DIAS_SEMANA = ['', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
+
+/** Segundos como m:ss o h:mm:ss. */
+export function duracion(seg: number): string {
+    const h = Math.floor(seg / 3600);
+    const m = Math.floor((seg % 3600) / 60);
+    const s = String(seg % 60).padStart(2, '0');
+    return h ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`;
+}

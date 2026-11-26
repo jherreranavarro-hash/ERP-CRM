@@ -20,7 +20,7 @@ class RolesSeeder extends Seeder
             ['Cajera', 'caja', ['caja.*', '!caja.*.aprobar'], ['ventascrm.cotizacion.ver', 'configuracion.clientes.ver', 'configuracion.clientes.crear', 'configuracion.producto.ver']],
             ['Ejecutiva comercial', 'ventas', ['dashboard.*', 'ventascrm.dashboard.*', 'ventascrm.cotizacion.*', 'ventascrm.orden-de-venta.*', 'ventascrm.cuentas-corrientes.*', 'inventario.stock.ver'], ['caja.facturas-de-ventas.ver', 'caja.facturas-de-ventas.crear', 'caja.facturas-de-ventas.editar', 'configuracion.clientes.ver', 'configuracion.producto.ver']],
             ['Agente de contact center', 'contact_center', ['ventascrm.agente.ver', 'ventascrm.script.ver', 'ventascrm.cotizacion.ver', 'ventascrm.cotizacion.crear'], []],
-            ['Supervisor de contact center', 'contact_center', ['ventascrm.*'], []],
+            ['Supervisor de contact center', 'contact_center', ['ventascrm.*', 'configuracion.proveedor-ip.*', 'configuracion.numero-entrante.*', 'configuracion.ivr.*', 'configuracion.lista-negra.*'], ['ventascrm.grabaciones.escuchar']],
             ['Bodeguero', 'bodega', ['inventario.*'], []],
             ['Comprador', 'compras', ['compras.*', 'inventario.recepcion-de-mercaderia.*', 'configuracion.proveedores.*'], ['configuracion.producto.ver', 'inventario.stock.ver']],
             ['Auditor', 'auditor', ['*.ver', '*.exportar'], []],

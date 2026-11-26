@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    // Central telefónica: el servicio puente AMI/ARI firma cada evento con este secreto.
+    'pbx' => [
+        'webhook_secret' => env('PBX_WEBHOOK_SECRET'),
+    ],
+
 ];
