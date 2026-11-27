@@ -76,6 +76,8 @@ class IntegracionesController extends Controller
             'ia' => app(AsistenteIa::class)->simulado(),
             'mapas' => app(Mapas::class)->simulado(),
             'pbx' => app(Pbx::class)->simulada(),
+            'meta_ads' => app(\App\Modules\Integraciones\MetaAds\MetaAds::class)->simulado(),
+            'linkedin' => app(\App\Modules\Integraciones\Linkedin\Linkedin::class)->simulado(),
             default => true,
         };
     }

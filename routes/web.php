@@ -405,6 +405,26 @@ Route::middleware('auth')->group(function () {
         Route::post('whatsapp/{conversacion}/estado', [$wa, 'estado'])->middleware($p('whatsapp', 'crear'))->name('whatsapp.estado');
         Route::post('whatsapp/{conversacion}/ia/{accion}', [$wa, 'ia'])->middleware([$p('whatsapp', 'crear'), 'throttle:20,1'])->whereIn('accion', ['sugerir', 'resumir'])->name('whatsapp.ia');
 
+        $pl = \App\Http\Controllers\Mensajeria\PlantillasController::class;
+        Route::get('whatsapp-plantillas', [$pl, 'index'])->middleware($p('whatsapp', 'ver'))->name('whatsapp.plantillas');
+        Route::post('whatsapp-plantillas', [$pl, 'store'])->middleware($p('whatsapp', 'editar'))->name('whatsapp.plantillas.store');
+        Route::post('whatsapp-plantillas/actualizar', [$pl, 'actualizar'])->middleware([$p('whatsapp', 'editar'), 'throttle:10,1'])->name('whatsapp.plantillas.actualizar');
+        Route::put('whatsapp-plantillas/{plantilla}', [$pl, 'update'])->middleware($p('whatsapp', 'editar'))->name('whatsapp.plantillas.update');
+        Route::post('whatsapp-plantillas/{plantilla}/revision', [$pl, 'revision'])->middleware($p('whatsapp', 'editar'))->name('whatsapp.plantillas.revision');
+        Route::delete('whatsapp-plantillas/{plantilla}', [$pl, 'destroy'])->middleware($p('whatsapp', 'editar'))->name('whatsapp.plantillas.destroy');
+
+        $li = \App\Http\Controllers\Mensajeria\LinkedinController::class;
+        Route::get('linkedin', [$li, 'index'])->middleware($p('linkedin', 'ver'))->name('linkedin');
+        Route::post('linkedin/sincronizar', [$li, 'sincronizar'])->middleware([$p('linkedin', 'ver'), 'throttle:6,1'])->name('linkedin.sincronizar');
+        Route::post('linkedin/{conversacion}/texto', [$li, 'texto'])->middleware([$p('linkedin', 'crear'), 'throttle:60,1'])->name('linkedin.texto');
+        Route::post('linkedin/{conversacion}/lead', [$li, 'lead'])->middleware($p('linkedin', 'crear'))->name('linkedin.lead');
+        Route::post('linkedin/{conversacion}/estado', [$li, 'estado'])->middleware($p('linkedin', 'crear'))->name('linkedin.estado');
+
+        $ma = \App\Http\Controllers\Marketing\MetaAdsController::class;
+        Route::get('meta-ads', [$ma, 'index'])->middleware($p('meta-ads', 'ver'))->name('meta-ads');
+        Route::post('meta-ads/sincronizar', [$ma, 'sincronizar'])->middleware([$p('meta-ads', 'editar'), 'throttle:6,1'])->name('meta-ads.sincronizar');
+        Route::put('meta-ads/{campana}/destino', [$ma, 'destino'])->middleware($p('meta-ads', 'editar'))->name('meta-ads.destino');
+
         Route::get('grabaciones', [\App\Http\Controllers\ContactCenter\CalidadController::class, 'grabaciones'])->middleware($p('grabaciones', 'ver'))->name('grabaciones');
         Route::post('grabaciones/{llamada}', [\App\Http\Controllers\ContactCenter\CalidadController::class, 'solicitarGrabacion'])->middleware([$p('grabaciones', 'escuchar'), 'throttle:20,1'])->name('grabaciones.solicitar');
         Route::get('grabaciones/{llamada}/audio', [\App\Http\Controllers\ContactCenter\CalidadController::class, 'audio'])->middleware($p('grabaciones', 'escuchar'))->name('grabaciones.audio');

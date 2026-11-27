@@ -89,6 +89,7 @@ onBeforeUnmount(() => { clearTimeout(espera); echo?.leave(props.canal); echo?.di
 <template>
     <Head title="WhatsApp" />
     <Encabezado titulo="WhatsApp" bajada="Conversaciones con clientes y prospectos. Fuera de las 24 horas desde el último mensaje del cliente, WhatsApp solo permite plantillas aprobadas.">
+        <Link href="/ventas/whatsapp-plantillas" class="btn btn-secundario no-underline">Plantillas</Link>
         <button v-if="puedeEscribir" class="btn btn-primario" :disabled="!activa" @click="nueva = true"><Icono nombre="mas" :tamano="18" /> Nueva conversación</button>
     </Encabezado>
     <p v-if="!activa" class="tarjeta mb-4 p-4 text-[14px]">La integración de WhatsApp no está activa. Actívala en <Link href="/configuracion/integraciones">Configuración → Integraciones</Link> para enviar mensajes.</p>
