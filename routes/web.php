@@ -388,12 +388,36 @@ Route::middleware('auth')->group(function () {
         Route::put('auditoria/criterios/{criterio}', [\App\Http\Controllers\ContactCenter\CalidadController::class, 'guardarCriterio'])->middleware($p('auditoria', 'editar'))->name('auditoria.criterios.update');
         Route::post('auditoria/{llamada}', [\App\Http\Controllers\ContactCenter\CalidadController::class, 'evaluar'])->middleware($p('auditoria', 'crear'))->name('auditoria.evaluar');
 
+        $rc = \App\Http\Controllers\Terreno\RecorridosController::class;
+        Route::get('recorrido', [$rc, 'index'])->middleware($p('lista-de-recorrido', 'ver'))->name('recorrido');
+        Route::post('recorrido', [$rc, 'store'])->middleware($p('lista-de-recorrido', 'crear'))->name('recorrido.store');
+        Route::post('recorrido/{recorrido}/paradas', [$rc, 'agregar'])->middleware($p('lista-de-recorrido', 'crear'))->name('recorrido.agregar');
+        Route::post('recorrido/{recorrido}/optimizar', [$rc, 'optimizar'])->middleware($p('lista-de-recorrido', 'crear'))->name('recorrido.optimizar');
+        Route::post('recorrido/{recorrido}/cerrar', [$rc, 'cerrar'])->middleware($p('lista-de-recorrido', 'crear'))->name('recorrido.cerrar');
+        Route::post('recorrido/paradas/{parada}/marcar', [$rc, 'marcar'])->middleware($p('lista-de-recorrido', 'ver'))->name('recorrido.marcar');
+        Route::delete('recorrido/paradas/{parada}', [$rc, 'quitar'])->middleware($p('lista-de-recorrido', 'crear'))->name('recorrido.quitar');
+
+        $wa = \App\Http\Controllers\Mensajeria\WhatsappController::class;
+        Route::get('whatsapp', [$wa, 'index'])->middleware($p('whatsapp', 'ver'))->name('whatsapp');
+        Route::post('whatsapp/iniciar', [$wa, 'iniciar'])->middleware($p('whatsapp', 'crear'))->name('whatsapp.iniciar');
+        Route::post('whatsapp/{conversacion}/texto', [$wa, 'texto'])->middleware([$p('whatsapp', 'crear'), 'throttle:60,1'])->name('whatsapp.texto');
+        Route::post('whatsapp/{conversacion}/plantilla', [$wa, 'plantilla'])->middleware([$p('whatsapp', 'crear'), 'throttle:30,1'])->name('whatsapp.plantilla');
+        Route::post('whatsapp/{conversacion}/estado', [$wa, 'estado'])->middleware($p('whatsapp', 'crear'))->name('whatsapp.estado');
+        Route::post('whatsapp/{conversacion}/ia/{accion}', [$wa, 'ia'])->middleware([$p('whatsapp', 'crear'), 'throttle:20,1'])->whereIn('accion', ['sugerir', 'resumir'])->name('whatsapp.ia');
+
         Route::get('grabaciones', [\App\Http\Controllers\ContactCenter\CalidadController::class, 'grabaciones'])->middleware($p('grabaciones', 'ver'))->name('grabaciones');
         Route::post('grabaciones/{llamada}', [\App\Http\Controllers\ContactCenter\CalidadController::class, 'solicitarGrabacion'])->middleware([$p('grabaciones', 'escuchar'), 'throttle:20,1'])->name('grabaciones.solicitar');
         Route::get('grabaciones/{llamada}/audio', [\App\Http\Controllers\ContactCenter\CalidadController::class, 'audio'])->middleware($p('grabaciones', 'escuchar'))->name('grabaciones.audio');
     });
 
     // Configuración → telefonía
+    Route::prefix('configuracion/integraciones')->name('configuracion.integraciones.')->group(function () {
+        $ic = \App\Http\Controllers\Configuracion\IntegracionesController::class;
+        Route::get('/', [$ic, 'index'])->middleware('permiso:configuracion.integraciones.ver')->name('index');
+        Route::put('{tipo}', [$ic, 'update'])->middleware('permiso:configuracion.integraciones.editar')->whereIn('tipo', array_keys(\App\Modules\Integraciones\Models\Integracion::TIPOS))->name('update');
+        Route::post('{tipo}/probar', [$ic, 'probar'])->middleware(['permiso:configuracion.integraciones.editar', 'throttle:10,1'])->whereIn('tipo', array_keys(\App\Modules\Integraciones\Models\Integracion::TIPOS))->name('probar');
+    });
+
     Route::prefix('configuracion/telefonia')->name('configuracion.telefonia.')->group(function () {
         $t = \App\Http\Controllers\ContactCenter\TelefoniaController::class;
         Route::get('proveedores', [$t, 'proveedores'])->middleware('permiso:configuracion.proveedor-ip.ver')->name('proveedores');

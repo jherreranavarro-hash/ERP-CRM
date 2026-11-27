@@ -141,6 +141,7 @@ class DemoSeeder extends Seeder
 
             $this->rrhh($admin);
             $this->contactCenter($admin, User::where('email', 'caja@obramax.cl')->first());
+            $this->terrenoYMensajeria($admin);
 
             Cliente::firstOrCreate(['rut' => '11111111-1'], ['razon_social' => 'Juan Pérez Soto', 'giro' => 'Particular', 'direccion' => 'Pasaje Uno 123', 'comuna' => 'Maipú', 'ciudad' => 'Santiago', 'lista_precio' => 'meson']);
         });
@@ -219,6 +220,45 @@ class DemoSeeder extends Seeder
             \App\Modules\ContactCenter\Models\Llamada::create(['campana_id' => $campana->id, 'lead_id' => $lead->id, 'agente_id' => $agente->id, 'direccion' => 'saliente', 'numero' => $lead->telefono,
                 'estado' => 'terminada', 'pbx_id' => 'demo-'.$lead->id, 'inicio' => $inicio, 'contestada_at' => $inicio->copy()->addSeconds(12), 'fin' => $inicio->copy()->addSeconds(200),
                 'espera_seg' => 12, 'duracion_seg' => 188, 'resultado' => $i ? 'interesado' : 'volver_a_llamar', 'notas' => 'Llamada de demostración.', 'grabacion_ref' => 'demo-'.$lead->id.'.wav']);
+        }
+    }
+
+    /** Fase 4b: integraciones simuladas activas, plantillas de WhatsApp, una conversación y el recorrido de hoy del administrador. */
+    private function terrenoYMensajeria(User $admin): void
+    {
+        if (\App\Modules\Integraciones\Models\Integracion::exists()) {
+            return;
+        }
+        foreach (['whatsapp' => 'DEMO-PHONE-ID', 'ia' => null, 'mapas' => null, 'correo' => null] as $tipo => $id) {
+            \App\Modules\Integraciones\Models\Integracion::create(['tipo' => $tipo, 'activa' => true, 'ambiente' => 'certificacion', 'identificador' => $id, 'reintentos' => 5, 'timeout_seg' => 15]);
+        }
+        $seguimiento = \App\Modules\Mensajeria\Models\Plantilla::create(['nombre' => 'seguimiento_cotizacion', 'cuerpo' => 'Hola {{1}}, le escribimos de Obramax por su cotización {{2}}. ¿Le podemos ayudar con algo más?']);
+        \App\Modules\Mensajeria\Models\Plantilla::create(['nombre' => 'confirmacion_visita', 'cuerpo' => 'Hola {{1}}, le confirmamos la visita de nuestro ejecutivo para el {{2}}. Responda este mensaje si necesita cambiarla.']);
+
+        // Direcciones para los prospectos de la campaña demo, así pueden entrar al recorrido.
+        $calles = ['Av. Pajaritos 2450', 'Av. Teniente Cruz 880', 'Av. Lo Errázuriz 1200', 'Camino a Melipilla 9050', 'Av. San Pablo 6700', 'Av. Ecuador 4100', 'Av. La Estrella 550', 'Av. Carrascal 4300'];
+        foreach (\App\Modules\ContactCenter\Models\Lead::whereNull('direccion')->orderBy('id')->get() as $i => $l) {
+            $l->forceFill(['direccion' => $calles[$i % count($calles)]])->save();
+        }
+
+        $bandeja = app(\App\Modules\Mensajeria\Bandeja::class);
+        $lead = \App\Modules\ContactCenter\Models\Lead::orderBy('id')->first();
+        if ($lead) {
+            $c = $bandeja->iniciar($lead->telefono, $lead->nombre, null, $lead->id, $admin);
+            $c->mensajes()->create(['direccion' => 'saliente', 'tipo' => 'plantilla', 'plantilla_id' => $seguimiento->id, 'cuerpo' => $seguimiento->completar([$lead->nombre, 'N° 1024']),
+                'wa_id' => 'wamid.demo.1', 'estado' => 'leido', 'user_id' => $admin->id, 'created_at' => now()->subHours(3)]);
+            $bandeja->recibir($c->telefono, $lead->nombre, 'wamid.demo.2', 'Hola, sí. ¿Me puede confirmar el precio de 120 sacos de cemento con despacho a Maipú?', now()->subMinutes(20)->toImmutable());
+        }
+        $bandeja->recibir('56955501234', 'Ferretería El Maestro', 'wamid.demo.3', 'Buenas tardes, ¿tienen stock de fierro de 12 mm?', now()->subMinutes(5)->toImmutable());
+
+        $leads = \App\Modules\ContactCenter\Models\Lead::whereHas('agente', fn ($q) => $q->where('user_id', $admin->id))->whereIn('estado', \App\Modules\ContactCenter\Models\Lead::ABIERTOS)->limit(4)->pluck('id');
+        $paradas = $leads->map(fn ($id) => ['lead_id' => $id])->all();
+        if ($c = \App\Modules\Comercial\Models\Cliente::whereNotNull('direccion')->first()) {
+            $paradas[] = ['cliente_id' => $c->id];
+        }
+        $matriz = \App\Modules\Core\Models\Local::whereNotNull('direccion')->orderBy('es_bodega')->orderBy('codigo')->first();
+        if ($paradas) {
+            app(\App\Modules\Terreno\Recorridos::class)->crear($admin, today()->toDateString(), $matriz?->direccion, $matriz?->comuna, $paradas, $admin);
         }
     }
 }

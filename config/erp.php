@@ -119,7 +119,7 @@ return [
                 'orden-de-venta' => ['nombre' => 'Orden de Venta', 'acciones' => [...$crud, 'aprobar'], 'fase' => 3, 'ruta' => 'ventas.ordenes.index'],
                 'campana' => ['nombre' => 'Campaña', 'acciones' => $crud, 'fase' => 4, 'ruta' => 'ventas.campanas.index'],
                 'asignacion' => ['nombre' => 'Asignación', 'acciones' => $crud, 'fase' => 4, 'ruta' => 'ventas.asignacion'],
-                'lista-de-recorrido' => ['nombre' => 'Lista de Recorrido', 'acciones' => $crud, 'fase' => 4],
+                'lista-de-recorrido' => ['nombre' => 'Lista de Recorrido', 'acciones' => $crud, 'fase' => 4, 'ruta' => 'ventas.recorrido'],
                 'script' => ['nombre' => 'Script', 'acciones' => $crud, 'fase' => 4, 'ruta' => 'ventas.guiones'],
                 'cuentas-corrientes' => ['nombre' => 'Cuentas Corrientes por Cliente', 'acciones' => ['ver', 'exportar'], 'fase' => 2, 'ruta' => 'ventas.cuentas-corrientes'],
             ],
@@ -172,6 +172,10 @@ return [
             'parametros' => ['nombre' => 'Parámetros del Sistema', 'acciones' => ['ver', 'proponer', 'aprobar', 'exportar'], 'fase' => 1, 'ruta' => 'configuracion.parametros.index'],
             'tokens-api' => ['nombre' => 'Tokens de API', 'acciones' => ['ver', 'crear', 'eliminar'], 'fase' => 1, 'ruta' => 'configuracion.tokens.index'],
             'folios' => ['nombre' => 'Folios (CAF)', 'acciones' => ['ver', 'crear'], 'fase' => 2, 'ruta' => 'configuracion.folios.index'],
+            'integraciones' => ['nombre' => 'Integraciones', 'acciones' => ['ver', 'editar'], 'fase' => 4, 'ruta' => 'configuracion.integraciones.index'],
+        ],
+        'ventascrm' => [
+            'whatsapp' => ['nombre' => 'WhatsApp', 'acciones' => ['ver', 'crear', 'editar'], 'fase' => 4, 'ruta' => 'ventas.whatsapp'],
         ],
     ],
 ];

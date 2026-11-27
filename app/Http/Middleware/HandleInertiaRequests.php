@@ -30,6 +30,8 @@ class HandleInertiaRequests extends Middleware
             'auth' => fn () => $this->auth($request->user()),
             'empresa' => fn () => $this->empresa($request->user()),
             'menu' => fn () => $request->user() ? $this->menu($request->user()) : [],
+            // Aviso flotante de WhatsApp: solo el conteo de no leídos visibles para el usuario.
+            'whatsapp' => fn () => $this->whatsapp($request),
             'flash' => fn () => [
                 'exito' => $request->session()->get('exito'),
                 'error' => $request->session()->get('error'),
@@ -113,5 +115,17 @@ class HandleInertiaRequests extends Middleware
         }
 
         return $menu;
+    }
+
+    private function whatsapp(Request $request): ?int
+    {
+        $u = $request->user();
+        if (! $u || ! app(\App\Modules\Core\Tenancy\Tenancy::class)->id() || ! $u->tienePermiso('ventascrm.whatsapp.ver')) {
+            return null;
+        }
+
+        return (int) \App\Modules\Mensajeria\Models\Conversacion::where('no_leidos', '>', 0)
+            ->when(! $u->tienePermiso('ventascrm.whatsapp.editar'), fn ($q) => $q->where(fn ($w) => $w->whereNull('asignado_a')->orWhere('asignado_a', $u->id)))
+            ->count();
     }
 }

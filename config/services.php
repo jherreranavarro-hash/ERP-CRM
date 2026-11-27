@@ -40,4 +40,11 @@ return [
         'webhook_secret' => env('PBX_WEBHOOK_SECRET'),
     ],
 
+    // WhatsApp Business: el token de envío va cifrado en la ficha de la integración;
+    // aquí solo lo que el webhook necesita para verificar a Meta.
+    'whatsapp' => [
+        'app_secret' => env('WHATSAPP_APP_SECRET'),
+        'verify_token' => env('WHATSAPP_VERIFY_TOKEN'),
+    ],
+
 ];
