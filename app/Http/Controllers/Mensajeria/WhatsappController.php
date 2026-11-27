@@ -62,7 +62,6 @@ class WhatsappController extends Controller
                     'tipo' => $m->tipo, 'cuerpo' => $m->cuerpo, 'estado' => $m->estado, 'error' => $m->error, 'autor' => $m->user?->name, 'fecha' => $m->created_at->toIso8601String()]),
             ];
         }
-        $r = config('reverb.apps.apps.0') ?? [];
 
         return Inertia::render('Mensajeria/Whatsapp', [
             'conversaciones' => $lista->map(fn ($c) => ['id' => $c->id, 'nombre' => $c->nombre, 'telefono' => $c->telefono, 'estado' => $c->estado, 'no_leidos' => $c->no_leidos,
@@ -76,7 +75,7 @@ class WhatsappController extends Controller
             'puedeEscribir' => $request->user()->tienePermiso('ventascrm.whatsapp.crear'),
             'puedeTodas' => $this->todas($request),
             'canal' => 'whatsapp.'.app(Tenancy::class)->id(),
-            'conexion' => config('broadcasting.default') === 'reverb' && $r ? ['key' => $r['key'], 'host' => $r['options']['host'], 'port' => (int) $r['options']['port'], 'tls' => $r['options']['scheme'] === 'https'] : null,
+            'conexion' => \App\Support\TiempoReal::conexion(),
         ]);
     }
 

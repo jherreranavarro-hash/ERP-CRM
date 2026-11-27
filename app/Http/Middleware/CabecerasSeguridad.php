@@ -51,9 +51,7 @@ class CabecerasSeguridad
         $devWs = $dev ? preg_replace('#^http#', 'ws', $dev) : null;
         $extra = fn (string $p) => implode(' ', $this->parametros->valor($p));
         // Servidor de tiempo real (Reverb) para el wallboard del contact center.
-        $rt = config('broadcasting.default') === 'reverb' && config('broadcasting.connections.reverb.options.host')
-            ? (config('broadcasting.connections.reverb.options.scheme') === 'https' ? 'wss://' : 'ws://').config('broadcasting.connections.reverb.options.host').':'.config('broadcasting.connections.reverb.options.port')
-            : null;
+        $rt = \App\Support\TiempoReal::origenCsp();
 
         return implode('; ', array_filter([
             "default-src 'self'",

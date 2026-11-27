@@ -41,6 +41,13 @@ return [
                 'scheme' => env('REVERB_SCHEME', 'https'),
                 'useTLS' => env('REVERB_SCHEME', 'https') === 'https',
             ],
+            // Dirección que usa el navegador. Puede diferir de la interna (p. ej. en Docker
+            // la app publica en http://reverb:8080 y el navegador entra por localhost:8000).
+            'publico' => [
+                'host' => env('REVERB_PUBLIC_HOST', env('REVERB_HOST')),
+                'port' => env('REVERB_PUBLIC_PORT', env('REVERB_PORT', 443)),
+                'scheme' => env('REVERB_PUBLIC_SCHEME', env('REVERB_SCHEME', 'https')),
+            ],
             'client_options' => [
                 // Guzzle client options: https://docs.guzzlephp.org/en/stable/request-options.html
             ],

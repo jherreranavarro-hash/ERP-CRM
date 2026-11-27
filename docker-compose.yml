@@ -1,0 +1,84 @@
+# Entorno de PRUEBA local con integraciones simuladas (SII, PBX, WhatsApp, etc.).
+#   docker compose up -d --build     y abrir http://localhost:8000
+# No es la configuración de producción: para eso ver docs/despliegue.md.
+x-erp: &erp
+  build: .
+  image: erp-crm:prueba
+  environment: &erp-env
+    ERP_OWNER_PASSWORD: ${ERP_OWNER_PASSWORD:-owner-local}
+    ERP_APP_PASSWORD: ${ERP_APP_PASSWORD:-app-local}
+  volumes:
+    - storage:/var/www/html/storage
+  restart: unless-stopped
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres-local}
+      ERP_OWNER_PASSWORD: ${ERP_OWNER_PASSWORD:-owner-local}
+      ERP_APP_PASSWORD: ${ERP_APP_PASSWORD:-app-local}
+      TZ: America/Santiago
+    volumes:
+      - db:/var/lib/postgresql/data
+      - ./database/setup/roles.sql:/erp/roles.sql:ro
+      - ./docker/postgres/01-roles.sh:/docker-entrypoint-initdb.d/01-roles.sh:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 5s
+      retries: 30
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  app:
+    <<: *erp
+    environment:
+      <<: *erp-env
+      ERP_ROL: app
+      NGINX_LISTEN_IP_PROTOCOL: ipv4
+      APP_URL: http://localhost:8000
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-ObramaxDemo2026}
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_started }
+    ports:
+      - "127.0.0.1:8000:8080"   # solo accesible desde este computador
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1:8080/up') === false ? 1 : 0);"]
+      interval: 5s
+      start_period: 120s
+      retries: 30
+
+  reverb:
+    <<: *erp
+    healthcheck:
+      test: ["CMD", "healthcheck-reverb"]
+      start_period: 15s
+    command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
+    depends_on:
+      app: { condition: service_healthy }
+
+  cola:
+    <<: *erp
+    healthcheck:
+      test: ["CMD", "healthcheck-queue"]
+      start_period: 15s
+    command: ["php", "artisan", "queue:work", "redis", "--queue=dte,caja,correo,default,reportes", "--sleep=3", "--max-time=3600"]
+    depends_on:
+      app: { condition: service_healthy }
+
+  programador:
+    <<: *erp
+    healthcheck:
+      test: ["CMD", "healthcheck-schedule"]
+      start_period: 15s
+    command: ["php", "artisan", "schedule:work"]
+    depends_on:
+      app: { condition: service_healthy }
+
+volumes:
+  db:
+  storage:
