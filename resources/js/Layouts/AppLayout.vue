@@ -132,7 +132,7 @@ watch(() => flash.value.exito, (v) => { clearTimeout(timer); if (v) timer = setT
                 </div>
             </header>
 
-            <main class="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 sm:px-8 sm:py-8">
+            <main class="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 sm:px-8 sm:py-8" :class="whatsapp !== null && whatsapp !== undefined && !enBandeja && 'pb-24 sm:pb-24'">
                 <div v-if="flash.aviso && avisoVisible" class="mb-5 flex items-start gap-3 rounded-tarjeta border border-[#F3D79A] bg-estado-alerta-bg px-4 py-3 text-estado-alerta" role="status">
                     <Icono nombre="alerta" class="mt-0.5 shrink-0" />
                     <p class="flex-1 font-semibold">{{ flash.aviso }}</p>

@@ -14,15 +14,15 @@ import Icono from '@/Components/Icono.vue';
 import { pesos, rut } from '@/lib/formato';
 import { usePermisos } from '@/lib/permisos';
 
-interface Cliente { id: number; rut: string; razon_social: string; giro: string | null; direccion: string | null; comuna: string | null; ciudad: string | null; email: string | null; telefono: string | null; lista_precio: 'meson' | 'mayorista'; tiene_credito: boolean; cupo_credito: number; plazo_dias: number; activo: boolean }
-const props = defineProps<{ clientes: Paginado<Cliente>; filtros: { buscar?: string; credito?: string }; plazos: number[] }>();
+interface Cliente { id: number; rut: string; razon_social: string; giro: string | null; direccion: string | null; comuna: string | null; ciudad: string | null; email: string | null; telefono: string | null; lista_precio: string; tiene_credito: boolean; cupo_credito: number; plazo_dias: number; activo: boolean }
+const props = defineProps<{ clientes: Paginado<Cliente>; filtros: { buscar?: string; credito?: string }; plazos: number[]; listas: { codigo: string; nombre: string }[] }>();
 const puede = usePermisos();
 
 const f = reactive({ buscar: props.filtros.buscar ?? '', credito: props.filtros.credito ?? '' });
 let t: ReturnType<typeof setTimeout>;
 watch(f, () => { clearTimeout(t); t = setTimeout(() => router.get('/configuracion/clientes', { ...f }, { preserveState: true, replace: true }), 300); });
 
-const vacio = { rut: '', razon_social: '', giro: '', direccion: '', comuna: '', ciudad: '', email: '', telefono: '', lista_precio: 'meson' as 'meson' | 'mayorista', tiene_credito: false, cupo_credito: 0, plazo_dias: 0, activo: true };
+const vacio = { rut: '', razon_social: '', giro: '', direccion: '', comuna: '', ciudad: '', email: '', telefono: '', lista_precio: 'meson' as string, tiene_credito: false, cupo_credito: 0, plazo_dias: 0, activo: true };
 const editando = ref<Cliente | null>(null);
 const abierto = ref(false);
 const form = useForm({ ...vacio });
@@ -70,7 +70,7 @@ const editaCredito = puede('configuracion.cuentas-corrientes.editar');
                         <td class="num whitespace-nowrap font-semibold">{{ rut(c.rut) }}</td>
                         <td><div>{{ c.razon_social }}</div><div v-if="c.giro" class="text-[13px] text-grafito">{{ c.giro }}</div></td>
                         <td class="text-grafito">{{ c.comuna || '—' }}</td>
-                        <td>{{ c.lista_precio === 'mayorista' ? 'Mayorista' : 'Mesón' }}</td>
+                        <td>{{ listas.find((l) => l.codigo === c.lista_precio)?.nombre ?? c.lista_precio }}</td>
                         <td class="num text-right">{{ c.tiene_credito ? pesos(c.cupo_credito) : '—' }}<div v-if="c.tiene_credito" class="text-[13px] text-grafito">{{ c.plazo_dias }} días</div></td>
                         <td><Chip chico :tono="c.activo ? 'ok' : 'neutro'">{{ c.activo ? 'Activo' : 'Inactivo' }}</Chip></td>
                         <td class="whitespace-nowrap text-right">
@@ -98,7 +98,7 @@ const editaCredito = puede('configuracion.cuentas-corrientes.editar');
             <Campo etiqueta="Correo" id="email" :error="form.errors.email"><input id="email" v-model="form.email" type="email" class="campo h-11" /></Campo>
             <Campo etiqueta="Teléfono" id="telefono" :error="form.errors.telefono"><input id="telefono" v-model="form.telefono" class="campo h-11" /></Campo>
             <Campo etiqueta="Lista de precios" id="lista_precio" :error="form.errors.lista_precio">
-                <select id="lista_precio" v-model="form.lista_precio" class="campo h-11"><option value="meson">Mesón</option><option value="mayorista">Mayorista</option></select>
+                <select id="lista_precio" v-model="form.lista_precio" class="campo h-11"><option v-for="l in listas" :key="l.codigo" :value="l.codigo">{{ l.nombre }}</option></select>
             </Campo>
             <div class="flex items-end pb-2"><Interruptor v-model="form.activo" etiqueta="Cliente activo" /></div>
             <template v-if="editaCredito">

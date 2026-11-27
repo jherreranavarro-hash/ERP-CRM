@@ -142,6 +142,7 @@ class DemoSeeder extends Seeder
             $this->rrhh($admin);
             $this->contactCenter($admin, User::where('email', 'caja@obramax.cl')->first());
             $this->terrenoYMensajeria($admin);
+            $this->preciosYMetas($admin);
 
             Cliente::firstOrCreate(['rut' => '11111111-1'], ['razon_social' => 'Juan Pérez Soto', 'giro' => 'Particular', 'direccion' => 'Pasaje Uno 123', 'comuna' => 'Maipú', 'ciudad' => 'Santiago', 'lista_precio' => 'meson']);
         });
@@ -224,6 +225,40 @@ class DemoSeeder extends Seeder
     }
 
     /** Fase 4b: integraciones simuladas activas, plantillas de WhatsApp, una conversación y el recorrido de hoy del administrador. */
+    /** Listas de precios, reglas y escalones de descuento, y metas del mes. */
+    private function preciosYMetas(User $admin): void
+    {
+        if (\App\Modules\Comercial\Models\Meta::exists()) {
+            return;
+        }
+        $listas = app(\App\Modules\Comercial\ListasPrecios::class);
+        $listas->asegurarBase();
+        \App\Modules\Comercial\Models\ListaPrecio::firstOrCreate(['codigo' => 'constructor'], ['nombre' => 'Constructoras', 'regla' => 'porcentaje', 'porcentaje' => 8, 'vigente_desde' => now()->startOfYear()->toDateString(), 'vigente_hasta' => now()->endOfYear()->toDateString()]);
+        $obras = \App\Modules\Comercial\Models\ListaPrecio::firstOrCreate(['codigo' => 'obras'], ['nombre' => 'Obras públicas', 'regla' => 'propio']);
+        foreach (Producto::orderBy('id')->limit(4)->get() as $p) {
+            \App\Modules\Comercial\Models\ListaPrecioItem::firstOrCreate(['lista_id' => $obras->id, 'producto_id' => $p->id], ['precio_neto' => round((float) $p->precio_neto * 0.9)]);
+        }
+
+        $cat = Categoria::where('nombre', 'Obra gruesa')->value('id');
+        \App\Modules\Comercial\Models\ReglaDescuento::firstOrCreate(['nombre' => 'Volumen obra gruesa mayorista'], ['categoria_id' => $cat, 'lista_precio' => 'mayorista', 'cantidad_minima' => 50, 'descuento_pct' => 12, 'creado_por' => $admin->id]);
+        \App\Modules\Comercial\Models\ReglaDescuento::firstOrCreate(['nombre' => 'Cyber diciembre'], ['cantidad_minima' => 0, 'descuento_pct' => 5, 'vigente_desde' => now()->year.'-12-01', 'vigente_hasta' => now()->year.'-12-07', 'creado_por' => $admin->id]);
+        foreach ([20 => 'Analista de Finanzas', 35 => 'Gerente'] as $hasta => $rol) {
+            \App\Modules\Comercial\Models\NivelDescuento::firstOrCreate(['hasta_pct' => $hasta], ['rol_id' => Rol::where('nombre', $rol)->value('id')]);
+        }
+
+        $periodo = now()->startOfMonth()->toDateString();
+        $meta = fn (array $d) => \App\Modules\Comercial\Models\Meta::create($d + ['periodo' => $periodo, 'creado_por' => $admin->id, 'local_id' => null, 'user_id' => null]);
+        $meta(['indicador' => 'venta_neta', 'alcance' => 'empresa', 'objetivo' => 1500000]);
+        $meta(['indicador' => 'documentos', 'alcance' => 'empresa', 'objetivo' => 12]);
+        if ($local = Local::where('es_bodega', false)->orderBy('codigo')->first()) {
+            $meta(['indicador' => 'venta_neta', 'alcance' => 'local', 'local_id' => $local->id, 'objetivo' => 1000000]);
+        }
+        foreach (UsuarioEmpresa::where('activo', true)->pluck('user_id')->unique()->values()->take(3) as $i => $uid) {
+            $meta(['indicador' => 'venta_neta', 'alcance' => 'vendedor', 'user_id' => $uid, 'objetivo' => [2000000, 300000, 300000][$i]]);
+            $meta(['indicador' => 'cotizaciones', 'alcance' => 'vendedor', 'user_id' => $uid, 'objetivo' => [10, 5, 5][$i]]);
+        }
+    }
+
     private function terrenoYMensajeria(User $admin): void
     {
         if (\App\Modules\Integraciones\Models\Integracion::exists()) {

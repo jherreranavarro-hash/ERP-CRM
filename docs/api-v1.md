@@ -48,4 +48,8 @@ excedido), queda `por_aprobar` con sus `motivos_aprobacion` y no se emite.
 El precio lo decide el sistema según la lista del cliente; un `precio_unitario` enviado
 se registra como precio manual junto al de lista.
 
-Pendiente: documentación OpenAPI generada desde el código (Scribe) y alertas por uso anómalo.
+La especificación OpenAPI 3.1 se genera desde las rutas (`App\Support\Api\OpenApi`) y se ve en
+Configuración → Documentación Informe Ventas, con descarga de `openapi-v1.json`. Una ruta nueva
+sin descripción aparece como "Sin documentar" y hace fallar la prueba de la API.
+
+Pendiente: alertas por uso anómalo.

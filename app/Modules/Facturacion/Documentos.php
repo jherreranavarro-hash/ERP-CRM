@@ -5,6 +5,8 @@ namespace App\Modules\Facturacion;
 use App\Models\User;
 use App\Modules\Caja\Models\TurnoCaja;
 use App\Modules\Comercial\Models\Cliente;
+use App\Modules\Comercial\Descuentos;
+use App\Modules\Comercial\ListasPrecios;
 use App\Modules\Comercial\Models\Producto;
 use App\Modules\Core\Auditoria\Auditoria;
 use App\Modules\Core\Models\Local;
@@ -37,6 +39,8 @@ class Documentos
         private Parametros $parametros,
         private Auditoria $auditoria,
         private Tenancy $tenancy,
+        private ListasPrecios $listas,
+        private Descuentos $descuentos,
     ) {}
 
     /* ───────────────────────── Borradores ───────────────────────── */
@@ -72,8 +76,9 @@ class Documentos
         $formaPago = $datos['forma_pago'] ?? 'contado';
         // Una NC solo rebaja montos: no pasa por las aprobaciones comerciales.
         $motivos = $tipo === 61 ? [] : $this->motivosDeAprobacion($lineas, $descGlobal, $formaPago, $cliente, $totales['monto_total'], $doc);
+        $nivel = $tipo === 61 ? null : $this->nivelDescuento($lineas, $descGlobal, $cliente);
 
-        return DB::transaction(function () use ($doc, $datos, $user, $tipo, $cliente, $tasa, $lineas, $descGlobal, $totales, $formaPago, $motivos, $ivaIncluido) {
+        return DB::transaction(function () use ($doc, $datos, $user, $tipo, $cliente, $tasa, $lineas, $descGlobal, $totales, $formaPago, $motivos, $nivel, $ivaIncluido) {
             $doc ??= new Documento(['creado_por' => $user->id, 'cotizacion_id' => $datos['cotizacion_id'] ?? null, 'orden_venta_id' => $datos['orden_venta_id'] ?? null]);
             $doc->fill([
                 'tipo_dte' => $tipo,
@@ -89,6 +94,7 @@ class Documentos
                 'observaciones' => $datos['observaciones'] ?? null,
                 'estado' => $motivos ? 'por_aprobar' : 'borrador',
                 'aprobacion_motivos' => $motivos ?: null,
+                'nivel_descuento_pct' => $nivel,
                 'aprobado_por' => null,          // cualquier edición invalida una aprobación previa
             ] + array_diff_key($totales, ['afecto' => 1]) + ['saldo' => 0]);
             $doc->save();
@@ -133,7 +139,7 @@ class Documentos
         }
 
         return [
-            'lineas' => array_map(fn ($l) => ['precio_unitario' => $l['precio_unitario'], 'precio_lista' => $l['precio_lista'], 'monto_item' => $l['monto_item'], 'exento' => $l['exento']], $lineas),
+            'lineas' => array_map(fn ($l) => ['precio_unitario' => $l['precio_unitario'], 'precio_lista' => $l['precio_lista'], 'descuento_pct' => $l['descuento_pct'], 'monto_item' => $l['monto_item'], 'exento' => $l['exento']], $lineas),
             'totales' => $totales,
             'motivos' => $this->motivosDeAprobacion($lineas, (string) ($datos['descuento_global_pct'] ?? 0), $datos['forma_pago'] ?? 'contado', $cliente, $totales['monto_total'], null),
         ];
@@ -186,6 +192,7 @@ class Documentos
         if ($doc->creado_por === $user->id) {
             throw ValidationException::withMessages(['documento' => 'Nadie aprueba su propio documento: debe aprobarlo otra persona.']);
         }
+        $this->descuentos->exigirAprobador($user, $doc->nivel_descuento_pct !== null ? (string) $doc->nivel_descuento_pct : null);
 
         $doc->forceFill(['estado' => 'borrador', 'aprobado_por' => $user->id])->save();
         $this->auditoria->registrar('documento.aprobar', $doc, null, ['motivos' => $doc->aprobacion_motivos], $comentario);
@@ -392,6 +399,7 @@ class Documentos
 
         $productos = Producto::whereIn('id', array_filter(array_column($entrada, 'producto_id')))->get()->keyBy('id');
         $lista = $cliente?->lista_precio ?? 'meson';
+        $preciosLista = $this->listas->precios($productos->values(), $lista);
         $conIva = $ivaIncluido;
         $exentoDoc = in_array($tipo, Calculadora::EXENTOS, true);
 
@@ -402,7 +410,7 @@ class Documentos
 
             $precioLista = null;
             if ($producto) {
-                $neto = $producto->precioNetoPara($lista);
+                $neto = $preciosLista[$producto->id];
                 $precioLista = $conIva && ! $producto->exento ? (string) $this->calc->precioConIva($neto, $tasa) : $this->normalizarDecimal($neto);
             }
             $manual = isset($l['precio_unitario']) && $l['precio_unitario'] !== '' && $l['precio_unitario'] !== null;
@@ -419,8 +427,11 @@ class Documentos
                 throw ValidationException::withMessages(["lineas.{$i}.descripcion" => "Línea {$n}: la descripción debe tener entre 1 y {$largo} caracteres."]);
             }
 
-            $pct = $this->normalizarDecimal((string) ($l['descuento_pct'] ?? '0') ?: '0');
             $descMonto = isset($l['descuento_monto']) && $l['descuento_monto'] !== '' && $l['descuento_monto'] !== null ? (int) $l['descuento_monto'] : null;
+            $sinDescuento = ($l['descuento_pct'] ?? null) === null || $l['descuento_pct'] === '';
+            // Sin descuento indicado se aplica la regla vigente (categoría, lista, cantidad), si la hay.
+            $regla = $sinDescuento && $descMonto === null && is_numeric($l['cantidad'] ?? null) ? $this->descuentos->porRegla($producto, (string) $l['cantidad'], $lista) : null;
+            $pct = $regla ?? ($this->normalizarDecimal((string) ($l['descuento_pct'] ?? '0') ?: '0'));
 
             try {
                 $calc = $this->calc->linea((string) ($l['cantidad'] ?? '0'), $precio, $pct, $descMonto);
@@ -454,12 +465,16 @@ class Documentos
     public function motivosDeAprobacion(array $lineas, string $descGlobal, string $formaPago, ?Cliente $cliente, int $total, ?Documento $doc): array
     {
         $motivos = [];
-        $max = BigDecimal::of((string) $this->parametros->valor('aprobaciones.descuento_max_pct'));
+        $max = $this->descuentos->maximo();
+        $lista = $cliente?->lista_precio ?? 'meson';
+        $productos = Producto::whereIn('id', array_filter(array_column($lineas, 'producto_id')))->get()->keyBy('id');
 
         foreach ($lineas as $i => $l) {
-            $pctEfectivo = $l['bruto'] > 0 ? BigDecimal::of($l['descuento_monto'])->multipliedBy(100)->dividedBy($l['bruto'], 2, \Brick\Math\RoundingMode::HALF_UP) : BigDecimal::zero();
-            if ($pctEfectivo->isGreaterThan($max)) {
-                $motivos[] = 'Línea '.($i + 1).": descuento de {$pctEfectivo} % sobre el máximo de {$max} %";
+            $pctEfectivo = $this->descuentos->pctLinea($l);
+            $regla = $this->descuentos->porRegla($productos[$l['producto_id'] ?? 0] ?? null, (string) $l['cantidad'], $lista);
+            $permitido = $regla !== null && BigDecimal::of($regla)->isGreaterThan($max) ? BigDecimal::of($regla) : $max;
+            if ($pctEfectivo->isGreaterThan($permitido)) {
+                $motivos[] = 'Línea '.($i + 1).": descuento de {$pctEfectivo} % sobre el máximo de {$permitido} %".($permitido->isEqualTo($max) ? '' : ' (regla)');
             }
             if ($this->parametros->valor('aprobaciones.precio_bajo_lista') && $l['precio_lista'] !== null
                 && BigDecimal::of($l['precio_unitario'])->isLessThan(BigDecimal::of($l['precio_lista']))) {
@@ -477,6 +492,14 @@ class Documentos
         }
 
         return $motivos;
+    }
+
+    /** Mayor descuento sobre lo autorizado (para exigir el escalón de aprobación); rechaza lo que supera el tope. */
+    public function nivelDescuento(array $lineas, string $descGlobal, ?Cliente $cliente): ?string
+    {
+        $productos = Producto::whereIn('id', array_filter(array_column($lineas, 'producto_id')))->get()->keyBy('id')->all();
+
+        return $this->descuentos->nivelRequerido($lineas, $descGlobal, $cliente?->lista_precio ?? 'meson', $productos);
     }
 
     private function validarReceptor(Documento $doc, ?Cliente $cliente): void

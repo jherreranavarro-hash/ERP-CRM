@@ -69,7 +69,7 @@ const agregar = () => form.lineas.push(nueva());
 const quitar = (i: number) => form.lineas.length > 1 && form.lineas.splice(i, 1);
 
 // ── Totales: siempre calculados por el backend ──
-interface Calculo { lineas: { precio_unitario: string; precio_lista: string | null; monto_item: number; exento: boolean }[]; totales: { afecto: number; descuento_global_monto: number; monto_neto: number; monto_exento: number; monto_iva: number; monto_total: number }; motivos: string[] }
+interface Calculo { lineas: { precio_unitario: string; precio_lista: string | null; descuento_pct: string; monto_item: number; exento: boolean }[]; totales: { afecto: number; descuento_global_monto: number; monto_neto: number; monto_exento: number; monto_iva: number; monto_total: number }; motivos: string[] }
 const calculo = ref<Calculo | null>(null);
 const errorCalculo = ref('');
 let tcalc: ReturnType<typeof setTimeout>;
@@ -95,7 +95,7 @@ const montoLinea = (i: number) => {
 };
 
 function guardar() {
-    form.transform((d) => ({ ...d, descuento_global_pct: d.descuento_global_pct || 0, lineas: d.lineas.map(({ buscando, monto_item, precio_lista, ...l }) => ({ ...l, precio_unitario: l.precio_unitario === '' ? null : l.precio_unitario, descuento_pct: l.descuento_pct === '' ? 0 : l.descuento_pct })) }));
+    form.transform((d) => ({ ...d, descuento_global_pct: d.descuento_global_pct || 0, lineas: d.lineas.map(({ buscando, monto_item, precio_lista, ...l }) => ({ ...l, precio_unitario: l.precio_unitario === '' ? null : l.precio_unitario, descuento_pct: l.descuento_pct === '' ? null : l.descuento_pct })) }));
     props.documento ? form.put(`/caja/documentos/${props.documento.id}`) : form.post('/caja/documentos');
 }
 const erroresForm = computed(() => form.errors as Record<string, string | undefined>);
@@ -132,7 +132,7 @@ const errorLinea = (i: number) => Object.entries(form.errors).filter(([k]) => k.
                 <div v-if="cliente" class="flex flex-wrap items-start justify-between gap-3 rounded-boton border border-linea p-4">
                     <div>
                         <div class="font-semibold">{{ cliente.razon_social }}</div>
-                        <div class="num text-[14px] text-grafito">{{ rut(cliente.rut) }} · {{ cliente.lista_precio === 'mayorista' ? 'Lista mayorista' : 'Lista mesón' }}</div>
+                        <div class="num text-[14px] text-grafito">{{ rut(cliente.rut) }} · Lista {{ cliente.lista_precio === 'meson' ? 'mesón' : cliente.lista_precio }}</div>
                         <div class="text-[14px] text-grafito">{{ [cliente.giro, cliente.direccion, cliente.comuna].filter(Boolean).join(' · ') }}</div>
                         <Chip v-if="receptorIncompleto" chico tono="alerta" class="mt-2">Faltan datos de receptor para facturar</Chip>
                     </div>
@@ -175,7 +175,7 @@ const errorLinea = (i: number) => Object.entries(form.errors).filter(([k]) => k.
                                 </td>
                                 <td><input v-model="l.cantidad" inputmode="decimal" class="campo num h-11 text-right" :aria-label="`Cantidad línea ${i + 1}`" /></td>
                                 <td><input v-model="l.precio_unitario" inputmode="decimal" class="campo num h-11 text-right" :placeholder="montoLinea(i)?.precio_lista ? String(Math.round(Number(montoLinea(i)?.precio_lista))) : ''" :aria-label="`Precio línea ${i + 1}`" /></td>
-                                <td><input v-model="l.descuento_pct" inputmode="decimal" class="campo num h-11 text-right" placeholder="0" :aria-label="`Descuento línea ${i + 1}`" /></td>
+                                <td><input v-model="l.descuento_pct" inputmode="decimal" class="campo num h-11 text-right" :placeholder="montoLinea(i)?.descuento_pct && montoLinea(i)?.descuento_pct !== '0' ? montoLinea(i)?.descuento_pct + ' regla' : '0'" :aria-label="`Descuento línea ${i + 1}`" /></td>
                                 <td class="num pt-5 text-right font-semibold">{{ pesos(montoLinea(i)?.monto_item) }}</td>
                                 <td class="pt-3"><button type="button" class="btn btn-secundario btn-sm" :disabled="form.lineas.length === 1" :aria-label="`Quitar línea ${i + 1}`" @click="quitar(i)"><Icono nombre="cerrar" :tamano="16" /></button></td>
                             </tr>

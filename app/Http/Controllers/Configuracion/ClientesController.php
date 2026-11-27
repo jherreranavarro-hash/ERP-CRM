@@ -37,6 +37,7 @@ class ClientesController extends Controller
             'clientes' => $q->paginate(25)->withQueryString()->through(fn (Cliente $c) => $c->only(['id', 'rut', 'razon_social', 'giro', 'direccion', 'comuna', 'ciudad', 'email', 'telefono', 'lista_precio', 'tiene_credito', 'cupo_credito', 'plazo_dias', 'activo'])),
             'filtros' => $request->only('buscar', 'credito'),
             'plazos' => app(\App\Modules\Core\Parametros\Parametros::class)->valor('credito.plazos_dias'),
+            'listas' => app(\App\Modules\Comercial\ListasPrecios::class)->todas()->where('activa', true)->values()->map->only(['codigo', 'nombre']),
         ]);
     }
 
@@ -84,7 +85,7 @@ class ClientesController extends Controller
             'ciudad' => ['nullable', 'string', 'max:40'],
             'email' => ['nullable', 'email', 'max:120'],
             'telefono' => ['nullable', 'string', 'max:30'],
-            'lista_precio' => ['required', Rule::in(['meson', 'mayorista'])],
+            'lista_precio' => ['required', Rule::in(app(\App\Modules\Comercial\ListasPrecios::class)->codigos())],
             'tiene_credito' => ['boolean'],
             'cupo_credito' => ['nullable', 'integer', 'min:0'],
             'plazo_dias' => ['nullable', 'integer', 'min:0', 'max:365'],
