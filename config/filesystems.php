@@ -38,6 +38,21 @@ return [
             'report' => false,
         ],
 
+        // Archivo frío de la política de retención (JSONL). En producción apúntalo a un
+        // bucket con versionado y bloqueo de objetos: ARCHIVO_DISK_DRIVER=s3 + AWS_*.
+        'archivo' => [
+            'driver' => env('ARCHIVO_DISK_DRIVER', 'local'),
+            'root' => env('ARCHIVO_DISK_DRIVER', 'local') === 'local' ? storage_path('app/archivo') : env('ARCHIVO_PREFIJO', 'archivo'),
+            'key' => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'region' => env('AWS_DEFAULT_REGION'),
+            'bucket' => env('ARCHIVO_BUCKET', env('AWS_BUCKET')),
+            'endpoint' => env('AWS_ENDPOINT'),
+            'serve' => false,
+            'throw' => true,
+            'report' => true,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

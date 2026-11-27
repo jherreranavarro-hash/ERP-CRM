@@ -17,7 +17,7 @@ import { usePermisos } from '@/lib/permisos';
 
 interface Fila {
     id: number; user_id: number; nombre: string; email: string; iniciales: string; rol_id: number; rol: string | null; perfil: string | null;
-    local_id: number | null; local: string | null; activo: boolean; tiene_2fa: boolean; es_superadmin: boolean; ultimo_acceso: string | null;
+    local_id: number | null; local: string | null; activo: boolean; tiene_2fa: boolean; es_superadmin: boolean; superadmin_pendiente: boolean; ultimo_acceso: string | null;
 }
 interface Opcion { id: number; nombre: string }
 const props = defineProps<{
@@ -26,6 +26,7 @@ const props = defineProps<{
     roles: Opcion[];
     locales: Opcion[];
     filtros: { buscar?: string; estado?: string; rol_id?: string };
+    soySuperadmin: boolean;
 }>();
 const puede = usePermisos();
 
@@ -51,6 +52,22 @@ function guardarEdicion() {
 }
 function cerrarSesiones(u: Fila) {
     if (confirm(`¿Cerrar todas las sesiones de ${u.nombre}?`)) router.post(`/configuracion/usuarios/${u.id}/cerrar-sesiones`, {}, { preserveScroll: true });
+}
+// Marca SuperAdmin: otorgarla la aprueba otro SuperAdmin; revocarla rige al tiro.
+const marca = ref<{ u: Fila; otorgar: boolean } | null>(null);
+const formMarca = useForm({ motivo: '' });
+function guardarMarca() {
+    const { u, otorgar } = marca.value!;
+    const url = `/configuracion/usuarios/${u.id}/superadmin`;
+    const op = { preserveScroll: true, onSuccess: () => { marca.value = null; formMarca.reset(); } };
+    if (otorgar) formMarca.post(url, op);
+    else formMarca.delete(url, op);
+}
+function acciones(u: Fila) {
+    const a = [{ etiqueta: 'Cerrar todas sus sesiones', accion: () => cerrarSesiones(u) }];
+    if (props.soySuperadmin && u.es_superadmin) a.push({ etiqueta: 'Revocar SuperAdmin', accion: () => (marca.value = { u, otorgar: false }) });
+    if (props.soySuperadmin && !u.es_superadmin && !u.superadmin_pendiente && u.activo) a.push({ etiqueta: 'Proponer como SuperAdmin', accion: () => (marca.value = { u, otorgar: true }) });
+    return a;
 }
 const exportar = () => (window.location.href = `/configuracion/usuarios?${new URLSearchParams({ ...f, exportar: '1' })}`);
 </script>
@@ -109,12 +126,13 @@ const exportar = () => (window.location.href = `/configuracion/usuarios?${new UR
                             <Chip chico :tono="u.activo ? 'ok' : 'neutro'">{{ u.activo ? 'Activo' : 'Inactivo' }}</Chip>
                             <Chip chico :tono="u.tiene_2fa ? 'ok' : 'alerta'">{{ u.tiene_2fa ? '2FA activa' : 'Sin 2FA' }}</Chip>
                             <Chip v-if="u.es_superadmin" chico tono="naranja">SuperAdmin</Chip>
+                            <Chip v-if="u.superadmin_pendiente" chico tono="info">SuperAdmin por aprobar</Chip>
                         </td>
                         <td class="whitespace-nowrap text-grafito" :title="fechaHora(u.ultimo_acceso)">{{ haceCuanto(u.ultimo_acceso) }}</td>
                         <td class="whitespace-nowrap text-right">
                             <div v-if="puede('configuracion.usuarios.editar')" class="flex justify-end gap-2">
                                 <button class="btn btn-secundario btn-sm" @click="abrirEdicion(u)">Editar</button>
-                                <MenuAcciones :acciones="[{ etiqueta: 'Cerrar todas sus sesiones', accion: () => cerrarSesiones(u) }]" />
+                                <MenuAcciones :acciones="acciones(u)" />
                             </div>
                         </td>
                     </tr>
@@ -156,6 +174,18 @@ const exportar = () => (window.location.href = `/configuracion/usuarios?${new UR
         <template #pie>
             <button class="btn btn-secundario" @click="editando = null">Cancelar</button>
             <button type="submit" form="form-editar" class="btn btn-primario" :disabled="editar.processing">Guardar</button>
+        </template>
+    </Modal>
+
+    <Modal :abierto="!!marca" :titulo="marca?.otorgar ? `Proponer a ${marca.u.nombre} como SuperAdmin` : `Revocar SuperAdmin a ${marca?.u.nombre ?? ''}`" @cerrar="marca = null">
+        <p class="mb-3 text-[14px] text-grafito">
+            <template v-if="marca?.otorgar">Otro SuperAdmin debe aprobarlo en Perfiles. La persona necesita 2FA activa.</template>
+            <template v-else>Rige de inmediato y cierra sus sesiones. Siempre queda al menos un SuperAdmin activo con 2FA.</template>
+        </p>
+        <Campo etiqueta="Motivo" id="motivo-marca" obligatorio :error="formMarca.errors.motivo || (formMarca.errors as Record<string, string>).superadmin"><textarea id="motivo-marca" v-model="formMarca.motivo" class="campo" rows="3" maxlength="500" /></Campo>
+        <template #pie>
+            <button class="btn btn-secundario" @click="marca = null">Cancelar</button>
+            <button class="btn btn-primario" :disabled="formMarca.processing" @click="guardarMarca">{{ marca?.otorgar ? 'Enviar a aprobación' : 'Revocar' }}</button>
         </template>
     </Modal>
 </template>

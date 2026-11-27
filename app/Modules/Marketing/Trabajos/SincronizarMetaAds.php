@@ -18,7 +18,10 @@ class SincronizarMetaAds implements ShouldQueue, ShouldBeUnique
 
     public int $tries = 3;
 
-    public function __construct(public int $empresaId) {}
+    public function __construct(public int $empresaId)
+    {
+        $this->onQueue('reportes'); // sincronizaciones: la prioridad más baja
+    }
 
     public function uniqueId(): string
     {

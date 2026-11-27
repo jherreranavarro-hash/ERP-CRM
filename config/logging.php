@@ -73,6 +73,17 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Producción: una línea JSON por evento (lista para Loki, ELK o CloudWatch).
+        // LOG_STACK=json; la retención la aplica datos:aplicar-retencion.
+        'json' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/erp.log'),
+            'level' => env('LOG_LEVEL', 'info'),
+            'days' => env('LOG_DAILY_DAYS', 14),
+            'formatter' => Monolog\Formatter\JsonFormatter::class,
+            'replace_placeholders' => true,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

@@ -26,6 +26,7 @@ class EnviarWhatsapp implements ShouldQueue
     public function __construct(public int $empresaId, public int $mensajeId, public array $variables = [], int $reintentos = 5)
     {
         $this->tries = max(1, $reintentos + 1);
+        $this->onQueue('correo');
     }
 
     public function backoff(): array

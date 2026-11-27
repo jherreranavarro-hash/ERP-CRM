@@ -6,7 +6,6 @@ use App\Models\User;
 use App\Modules\Auth\Captcha\CaptchaAritmetico;
 use App\Modules\Auth\Captcha\VerificadorCaptcha;
 use App\Modules\Facturacion\Sii\ProveedorDTE;
-use App\Modules\Facturacion\Sii\ProveedorDteSimulado;
 use App\Modules\Auth\EventosAutenticacion;
 use App\Modules\Core\Auditoria\Auditoria;
 use App\Modules\Core\Models\TokenAcceso;
@@ -32,18 +31,17 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(Parametros::class);
         $this->app->singleton(Auditoria::class);
         $this->app->bind(VerificadorCaptcha::class, CaptchaAritmetico::class);
-        // Proveedor DTE real pendiente de elección; mientras tanto, el simulado.
-        $this->app->bind(ProveedorDTE::class, ProveedorDteSimulado::class);
-        // RRHH: firma electrónica simulada y lector del archivo del reloj control (proveedores reales en fase 4).
-        $this->app->bind(\App\Modules\RRHH\Integraciones\FirmaElectronica::class, \App\Modules\RRHH\Integraciones\FirmaSimulada::class);
-        // Sin una central real configurada se usa la simulada; la real se conecta implementando Pbx.
-        $this->app->singleton(\App\Modules\ContactCenter\Telefonia\Pbx::class, \App\Modules\ContactCenter\Telefonia\PbxSimulada::class);
-        // Integraciones de la fase 4b: simuladas hasta enlazar proveedores reales (mismo contrato).
-        $this->app->singleton(\App\Modules\Integraciones\Mapas\Mapas::class, \App\Modules\Integraciones\Mapas\MapasSimulado::class);
-        $this->app->singleton(\App\Modules\Integraciones\Whatsapp\Whatsapp::class, \App\Modules\Integraciones\Whatsapp\WhatsappSimulado::class);
-        $this->app->singleton(\App\Modules\Integraciones\MetaAds\MetaAds::class, \App\Modules\Integraciones\MetaAds\MetaAdsSimulado::class);
-        $this->app->singleton(\App\Modules\Integraciones\Linkedin\Linkedin::class, \App\Modules\Integraciones\Linkedin\LinkedinSimulado::class);
-        $this->app->singleton(\App\Modules\Integraciones\Ia\AsistenteIa::class, \App\Modules\Integraciones\Ia\AsistenteSimulado::class);
+        // Integraciones externas: la clase de cada adaptador sale de config/integraciones.php
+        // (simulada por defecto; la real se elige por variable de entorno, sin tocar código).
+        $a = fn (string $k) => config("integraciones.adaptadores.{$k}");
+        $this->app->bind(ProveedorDTE::class, $a('dte'));
+        $this->app->bind(\App\Modules\RRHH\Integraciones\FirmaElectronica::class, $a('firma'));
+        $this->app->singleton(\App\Modules\ContactCenter\Telefonia\Pbx::class, $a('pbx'));
+        $this->app->singleton(\App\Modules\Integraciones\Mapas\Mapas::class, $a('mapas'));
+        $this->app->singleton(\App\Modules\Integraciones\Whatsapp\Whatsapp::class, $a('whatsapp'));
+        $this->app->singleton(\App\Modules\Integraciones\MetaAds\MetaAds::class, $a('meta_ads'));
+        $this->app->singleton(\App\Modules\Integraciones\Linkedin\Linkedin::class, $a('linkedin'));
+        $this->app->singleton(\App\Modules\Integraciones\Ia\AsistenteIa::class, $a('ia'));
         $this->app->bind(\App\Modules\RRHH\Integraciones\RelojControl::class, \App\Modules\RRHH\Integraciones\RelojCsv::class);
         // Transportistas externos: por ahora solo el simulado (integraciones reales en fase 4).
         $this->app->singleton(\App\Modules\Inventario\Transporte\Transportistas::class, fn () => new \App\Modules\Inventario\Transporte\Transportistas([new \App\Modules\Inventario\Transporte\TransportistaSimulado]));
@@ -52,6 +50,12 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Model::shouldBeStrict(! $this->app->isProduction());
+
+        // Exigido por código (no configurable): nunca modo debug en producción.
+        if ($this->app->isProduction() && config('app.debug')) {
+            config(['app.debug' => false]);
+            \Illuminate\Support\Facades\Log::critical('APP_DEBUG=true en producción: se forzó a false. Corrige el .env.');
+        }
         Sanctum::usePersonalAccessTokenModel(TokenAcceso::class);
 
         // Los permisos se verifican en el backend: Gate y @can delegan en el RBAC.

@@ -12,6 +12,8 @@ use App\Modules\Core\Models\Rol;
 use App\Modules\Core\Models\UsuarioEmpresa;
 use App\Modules\Core\Parametros\Parametros;
 use App\Modules\Core\Tenancy\Tenancy;
+use App\Modules\Operacion\Models\SolicitudPrivilegio;
+use App\Modules\Operacion\Privilegios;
 use App\Notifications\InvitacionUsuario;
 use App\Support\Exportacion\Csv;
 use Illuminate\Http\Request;
@@ -50,6 +52,7 @@ class UsuariosController extends Controller
             default => $q->where('usuario_empresa.activo', true)->where('users.activo', true),
         };
 
+        $pendientesSa = SolicitudPrivilegio::where('tipo', 'superadmin')->where('estado', 'pendiente')->pluck('user_id')->map(fn ($id) => (int) $id)->all();
         $fila = fn (UsuarioEmpresa $m) => [
             'id' => $m->id,
             'user_id' => $m->user_id,
@@ -64,6 +67,7 @@ class UsuariosController extends Controller
             'activo' => $m->activo && $m->user->activo,
             'tiene_2fa' => $m->user->tiene2fa(),
             'es_superadmin' => $m->user->es_superadmin,
+            'superadmin_pendiente' => in_array($m->user_id, $pendientesSa, true),
             'ultimo_acceso' => $m->user->ultimo_acceso_at?->toIso8601String(),
         ];
 
@@ -82,6 +86,7 @@ class UsuariosController extends Controller
             'roles' => Rol::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']),
             'locales' => Local::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']),
             'filtros' => $request->only('buscar', 'estado', 'rol_id'),
+            'soySuperadmin' => (bool) $request->user()->es_superadmin,
         ]);
     }
 
@@ -142,6 +147,10 @@ class UsuariosController extends Controller
         if ($membresia->user_id === $request->user()->id && ! $data['activo']) {
             throw ValidationException::withMessages(['activo' => 'No puedes desactivarte a ti mismo.']);
         }
+        // Separación de funciones: nadie cambia su propio rol, lo hace otra persona.
+        if ($membresia->user_id === $request->user()->id && (int) $data['rol_id'] !== (int) $membresia->rol_id) {
+            throw ValidationException::withMessages(['rol_id' => 'No puedes cambiar tu propio rol: pídeselo a otro administrador.']);
+        }
 
         $membresia->update($data);
         if (! $data['activo']) {
@@ -158,6 +167,24 @@ class UsuariosController extends Controller
         app(Auditoria::class)->registrar('sesion.cierre_forzado', $membresia->user);
 
         return back()->with('exito', 'Se cerraron todas las sesiones del usuario.');
+    }
+
+    public function solicitarSuperadmin(Request $request, UsuarioEmpresa $membresia)
+    {
+        abort_unless($membresia->empresa_id === $this->tenancy->id(), 404);
+        $d = $request->validate(['motivo' => ['required', 'string', 'min:10', 'max:500']]);
+        app(Privilegios::class)->solicitarSuperadmin($membresia->user, $request->user(), $d['motivo']);
+
+        return back()->with('exito', 'Solicitud creada: otro SuperAdmin debe aprobarla en Configuración → Perfiles.');
+    }
+
+    public function revocarSuperadmin(Request $request, UsuarioEmpresa $membresia)
+    {
+        abort_unless($membresia->empresa_id === $this->tenancy->id(), 404);
+        $d = $request->validate(['motivo' => ['required', 'string', 'min:10', 'max:500']]);
+        app(Privilegios::class)->revocarSuperadmin($membresia->user, $request->user(), $d['motivo']);
+
+        return back()->with('exito', 'Se revocó la marca SuperAdmin y se cerraron sus sesiones.');
     }
 
     /** Solo un SuperAdmin puede asignar roles del perfil SuperAdmin. */

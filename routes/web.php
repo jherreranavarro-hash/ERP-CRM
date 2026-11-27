@@ -33,6 +33,7 @@ use App\Http\Controllers\Configuracion\EmpresasController;
 use App\Http\Controllers\Configuracion\LocalesController;
 use App\Http\Controllers\Configuracion\ParametrosController;
 use App\Http\Controllers\Configuracion\RolesController;
+use App\Http\Controllers\Configuracion\OperacionController;
 use App\Http\Controllers\Configuracion\TokensController;
 use App\Http\Controllers\Configuracion\UsuariosController;
 use App\Http\Controllers\EmpresaActivaController;
@@ -83,6 +84,9 @@ Route::middleware('auth')->group(function () {
         Route::put('usuarios/{membresia}', [UsuariosController::class, 'update'])->middleware('permiso:configuracion.usuarios.editar')->name('usuarios.update');
         Route::post('usuarios/{membresia}/cerrar-sesiones', [UsuariosController::class, 'cerrarSesiones'])->middleware('permiso:configuracion.usuarios.editar')->name('usuarios.cerrar-sesiones');
         Route::delete('invitaciones/{invitacion}', [UsuariosController::class, 'revocarInvitacion'])->middleware('permiso:configuracion.usuarios.crear')->name('invitaciones.revocar');
+        // Marca SuperAdmin: otorgar pasa por cuatro ojos; revocar rige al tiro (el controlador exige SuperAdmin).
+        Route::post('usuarios/{membresia}/superadmin', [UsuariosController::class, 'solicitarSuperadmin'])->middleware('permiso:configuracion.usuarios.editar')->name('usuarios.superadmin.solicitar');
+        Route::delete('usuarios/{membresia}/superadmin', [UsuariosController::class, 'revocarSuperadmin'])->middleware('permiso:configuracion.usuarios.editar')->name('usuarios.superadmin.revocar');
 
         // Perfiles / roles (RBAC)
         Route::get('roles', [RolesController::class, 'index'])->middleware('permiso:configuracion.perfiles.ver')->name('roles.index');
@@ -91,6 +95,14 @@ Route::middleware('auth')->group(function () {
         Route::get('roles/{rol}/editar', [RolesController::class, 'edit'])->middleware('permiso:configuracion.perfiles.editar')->name('roles.edit');
         Route::put('roles/{rol}', [RolesController::class, 'update'])->middleware('permiso:configuracion.perfiles.editar')->name('roles.update');
         Route::delete('roles/{rol}', [RolesController::class, 'destroy'])->middleware('permiso:configuracion.perfiles.eliminar')->name('roles.destroy');
+        // Solicitudes de privilegio (cuatro ojos): el servicio valida quién puede resolver cada una.
+        Route::post('privilegios/{solicitud}/aprobar', [RolesController::class, 'aprobar'])->middleware('permiso:configuracion.perfiles.ver')->name('privilegios.aprobar');
+        Route::post('privilegios/{solicitud}/rechazar', [RolesController::class, 'rechazar'])->middleware('permiso:configuracion.perfiles.ver')->name('privilegios.rechazar');
+        Route::post('privilegios/{solicitud}/anular', [RolesController::class, 'anular'])->middleware('permiso:configuracion.perfiles.ver')->name('privilegios.anular');
+
+        // Operación y continuidad: alertas, respaldos y retención
+        Route::get('operacion', [OperacionController::class, 'index'])->middleware('permiso:configuracion.operacion.ver')->name('operacion.index');
+        Route::post('operacion/alertas/{alerta}/atender', [OperacionController::class, 'atender'])->middleware('permiso:configuracion.operacion.editar')->name('operacion.atender');
 
         // Parámetros del sistema (mantenedores)
         Route::get('parametros', [ParametrosController::class, 'index'])->middleware('permiso:configuracion.parametros.ver')->name('parametros.index');

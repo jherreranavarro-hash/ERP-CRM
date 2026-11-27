@@ -126,6 +126,11 @@ class Turnos
                 // Mínimo auditado no desactivable: todo cierre con diferencia.
                 $this->auditoria->registrar('caja.cierre_con_diferencia', $t, null, ['diferencias' => $diferencias, 'tolerancia' => $tolerancia], $observacion);
             }
+            if ($sobreTolerancia) {
+                app(\App\Modules\Operacion\Alertas::class)->emitir('diferencia_caja', "Cierre de caja con diferencia sobre la tolerancia ({$t->caja->nombre})", [
+                    'caja' => $t->caja->nombre, 'diferencia' => array_sum($diferencias), 'tolerancia' => $tolerancia,
+                ], "turno:{$t->id}");
+            }
 
             return $t;
         });
