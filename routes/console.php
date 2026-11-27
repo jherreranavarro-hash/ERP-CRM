@@ -58,3 +58,31 @@ Artisan::command('dte:reintentar', function (Tenancy $tenancy) {
 })->purpose('Reencola el envío al SII de documentos con error');
 
 Schedule::command('dte:reintentar')->everyFifteenMinutes()->onOneServer()->withoutOverlapping();
+
+/*
+ * Integraciones sin webhook: Meta Ads (métricas y prospectos), bandeja de LinkedIn y
+ * estado de las plantillas de WhatsApp en revisión. Una tarea en cola por empresa con
+ * la integración activa; el trabajo es único por empresa, así no se solapa.
+ */
+Artisan::command('integraciones:sincronizar {tipo : meta_ads, linkedin o plantillas}', function (Tenancy $tenancy, string $tipo) {
+    $n = 0;
+    foreach (Empresa::where('activo', true)->get() as $empresa) {
+        $tenancy->como($empresa, function () use ($empresa, $tipo, &$n) {
+            $integracion = $tipo === 'plantillas' ? 'whatsapp' : $tipo;
+            if (! \App\Modules\Integraciones\Models\Integracion::activa($integracion)) {
+                return;
+            }
+            match ($tipo) {
+                'meta_ads' => \App\Modules\Marketing\Trabajos\SincronizarMetaAds::dispatch($empresa->id),
+                'linkedin' => \App\Modules\Mensajeria\Trabajos\SincronizarLinkedin::dispatch($empresa->id),
+                'plantillas' => app(\App\Modules\Mensajeria\Plantillas::class)->actualizarPendientes(),
+            };
+            $n++;
+        });
+    }
+    $this->info("Empresas procesadas: {$n}");
+})->purpose('Sincroniza integraciones sin webhook (Meta Ads, LinkedIn, plantillas de WhatsApp)');
+
+Schedule::command('integraciones:sincronizar meta_ads')->hourly()->onOneServer();
+Schedule::command('integraciones:sincronizar linkedin')->everyFiveMinutes()->onOneServer();
+Schedule::command('integraciones:sincronizar plantillas')->everyFifteenMinutes()->onOneServer();

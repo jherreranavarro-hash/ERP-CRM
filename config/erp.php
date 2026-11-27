@@ -176,6 +176,8 @@ return [
         ],
         'ventascrm' => [
             'whatsapp' => ['nombre' => 'WhatsApp', 'acciones' => ['ver', 'crear', 'editar'], 'fase' => 4, 'ruta' => 'ventas.whatsapp'],
+            'linkedin' => ['nombre' => 'LinkedIn', 'acciones' => ['ver', 'crear', 'editar'], 'fase' => 4, 'ruta' => 'ventas.linkedin'],
+            'meta-ads' => ['nombre' => 'Meta Ads', 'acciones' => ['ver', 'editar'], 'fase' => 4, 'ruta' => 'ventas.meta-ads'],
         ],
     ],
 ];

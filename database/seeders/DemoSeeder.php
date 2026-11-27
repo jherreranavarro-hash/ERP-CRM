@@ -143,6 +143,7 @@ class DemoSeeder extends Seeder
             $this->contactCenter($admin, User::where('email', 'caja@obramax.cl')->first());
             $this->terrenoYMensajeria($admin);
             $this->preciosYMetas($admin);
+            $this->metaYLinkedin($admin);
 
             Cliente::firstOrCreate(['rut' => '11111111-1'], ['razon_social' => 'Juan Pérez Soto', 'giro' => 'Particular', 'direccion' => 'Pasaje Uno 123', 'comuna' => 'Maipú', 'ciudad' => 'Santiago', 'lista_precio' => 'meson']);
         });
@@ -225,6 +226,31 @@ class DemoSeeder extends Seeder
     }
 
     /** Fase 4b: integraciones simuladas activas, plantillas de WhatsApp, una conversación y el recorrido de hoy del administrador. */
+    /** Meta Ads y LinkedIn activos (simulados), prospectos importados y plantillas en distintos estados. */
+    private function metaYLinkedin(User $admin): void
+    {
+        if (\App\Modules\Marketing\Models\AdsCampana::exists()) {
+            return;
+        }
+        foreach (['meta_ads' => 'act_demo', 'linkedin' => 'org-demo'] as $tipo => $id) {
+            \App\Modules\Integraciones\Models\Integracion::updateOrCreate(['tipo' => $tipo], ['activa' => true, 'identificador' => $id]);
+        }
+        $pub = app(\App\Modules\Marketing\Publicidad::class);
+        $pub->sincronizar();
+        if ($destino = \App\Modules\ContactCenter\Models\Campana::where('estado', 'activa')->orderBy('id')->first()) {
+            $camp = \App\Modules\Marketing\Models\AdsCampana::where('externo_id', 'act_sim_120001')->first();
+            $pub->destino($camp, $destino);
+            $pub->reprocesar($camp->fresh());
+        }
+        app(\App\Modules\Mensajeria\Linkedin\BandejaLinkedin::class)->sincronizar();
+
+        $pl = app(\App\Modules\Mensajeria\Plantillas::class);
+        $pl->guardar(['nombre' => 'despacho_en_camino', 'idioma' => 'es', 'categoria' => 'utility', 'cuerpo' => "Hola {{1}}, tu pedido {{2}} salió de bodega y llega hoy entre {{3}} horas.\nResponde este mensaje si necesitas cambiar algo."], $admin);
+        $promo = $pl->guardar(['nombre' => 'cyber_obra_gruesa', 'idioma' => 'es', 'categoria' => 'utility', 'cuerpo' => 'Hola {{1}}, esta semana tenemos 12% de descuento en obra gruesa para tu proyecto.'], $admin);
+        $pl->enviarARevision($promo);
+        $pl->actualizarPendientes();
+    }
+
     /** Listas de precios, reglas y escalones de descuento, y metas del mes. */
     private function preciosYMetas(User $admin): void
     {

@@ -41,6 +41,8 @@ class AppServiceProvider extends ServiceProvider
         // Integraciones de la fase 4b: simuladas hasta enlazar proveedores reales (mismo contrato).
         $this->app->singleton(\App\Modules\Integraciones\Mapas\Mapas::class, \App\Modules\Integraciones\Mapas\MapasSimulado::class);
         $this->app->singleton(\App\Modules\Integraciones\Whatsapp\Whatsapp::class, \App\Modules\Integraciones\Whatsapp\WhatsappSimulado::class);
+        $this->app->singleton(\App\Modules\Integraciones\MetaAds\MetaAds::class, \App\Modules\Integraciones\MetaAds\MetaAdsSimulado::class);
+        $this->app->singleton(\App\Modules\Integraciones\Linkedin\Linkedin::class, \App\Modules\Integraciones\Linkedin\LinkedinSimulado::class);
         $this->app->singleton(\App\Modules\Integraciones\Ia\AsistenteIa::class, \App\Modules\Integraciones\Ia\AsistenteSimulado::class);
         $this->app->bind(\App\Modules\RRHH\Integraciones\RelojControl::class, \App\Modules\RRHH\Integraciones\RelojCsv::class);
         // Transportistas externos: por ahora solo el simulado (integraciones reales en fase 4).
