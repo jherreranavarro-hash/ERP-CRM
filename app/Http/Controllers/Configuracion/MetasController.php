@@ -36,7 +36,7 @@ class MetasController extends Controller
             'indicadores' => Meta::INDICADORES,
             'alcances' => Meta::ALCANCES,
             'locales' => Local::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']),
-            'vendedores' => User::whereIn('id', UsuarioEmpresa::where('activo', true)->select('user_id'))->orderBy('name')->get(['id', 'name']),
+            'vendedores' => User::whereIn('id', UsuarioEmpresa::where('empresa_id', app(\App\Modules\Core\Tenancy\Tenancy::class)->id())->where('activo', true)->select('user_id'))->orderBy('name')->get(['id', 'name']),
             'avanceMes' => $this->avanceMes($periodo),
             'hayAnterior' => Meta::whereDate('periodo', $periodo->copy()->subMonth())->exists(),
         ]);
@@ -94,7 +94,7 @@ class MetasController extends Controller
             'indicador' => ['required', Rule::in(array_keys(Meta::INDICADORES))],
             'alcance' => ['required', Rule::in(array_keys(Meta::ALCANCES))],
             'local_id' => ['nullable', 'required_if:alcance,local', 'integer', Rule::exists('locales', 'id')],
-            'user_id' => ['nullable', 'required_if:alcance,vendedor', 'integer', Rule::in(UsuarioEmpresa::where('activo', true)->pluck('user_id')->all())],
+            'user_id' => ['nullable', 'required_if:alcance,vendedor', 'integer', Rule::in(UsuarioEmpresa::where('empresa_id', app(\App\Modules\Core\Tenancy\Tenancy::class)->id())->where('activo', true)->pluck('user_id')->all())],
             'objetivo' => ['required', 'integer', 'min:1', 'max:999999999999'],
         ], ['local_id.required_if' => 'Elige el local.', 'user_id.required_if' => 'Elige el vendedor.', 'user_id.in' => 'El vendedor no pertenece a la empresa.']);
         $d['periodo'] = $this->periodo($d['periodo'])->toDateString();

@@ -59,7 +59,7 @@ class LinkedinController extends Controller
             'actual' => $actual,
             'puedeTodas' => $this->todas($request),
             'campanas' => Campana::whereIn('estado', ['borrador', 'activa', 'pausada'])->orderBy('nombre')->get(['id', 'nombre']),
-            'usuarios' => $this->todas($request) ? User::whereIn('id', \App\Modules\Core\Models\UsuarioEmpresa::where('activo', true)->select('user_id'))->orderBy('name')->get(['id', 'name']) : [],
+            'usuarios' => $this->todas($request) ? User::whereIn('id', \App\Modules\Core\Models\UsuarioEmpresa::where('empresa_id', app(\App\Modules\Core\Tenancy\Tenancy::class)->id())->where('activo', true)->select('user_id'))->orderBy('name')->get(['id', 'name']) : [],
         ]);
     }
 
@@ -92,7 +92,7 @@ class LinkedinController extends Controller
     public function estado(Request $request, LinkedinConversacion $conversacion)
     {
         $this->autorizar($request, $conversacion);
-        $d = $request->validate(['accion' => ['required', Rule::in(['cerrar', 'abrir', 'tomar', 'asignar'])], 'user_id' => ['nullable', 'integer']]);
+        $d = $request->validate(['accion' => ['required', Rule::in(['cerrar', 'abrir', 'tomar', 'asignar'])], 'user_id' => ['nullable', 'integer', \Illuminate\Validation\Rule::exists('usuario_empresa', 'user_id')->where('empresa_id', app(\App\Modules\Core\Tenancy\Tenancy::class)->id())->where('activo', true)]]);
         match ($d['accion']) {
             'cerrar' => $conversacion->update(['estado' => 'cerrada']),
             'abrir' => $conversacion->update(['estado' => 'abierta']),

@@ -81,6 +81,7 @@ class Cotizaciones
                 'aprobacion_motivos' => $motivos ?: null,
                 'nivel_descuento_pct' => $nivel,
                 'aprobado_por' => null,   // cualquier edición invalida una aprobación previa
+                'editado_por' => $user->id,
             ] + array_diff_key($totales, ['afecto' => 1]));
             $cot->save();
 
@@ -108,17 +109,21 @@ class Cotizaciones
 
     public function aprobar(Cotizacion $cot, User $user, ?string $comentario = null): Cotizacion
     {
-        if ($cot->estado !== 'por_aprobar') {
-            throw ValidationException::withMessages(['cotizacion' => 'Esta cotización no tiene aprobaciones pendientes.']);
-        }
-        if ($cot->creado_por === $user->id) {
-            throw ValidationException::withMessages(['cotizacion' => 'Nadie aprueba su propia cotización: debe aprobarla otra persona.']);
-        }
-        app(\App\Modules\Comercial\Descuentos::class)->exigirAprobador($user, $cot->nivel_descuento_pct !== null ? (string) $cot->nivel_descuento_pct : null, 'cotizacion');
-        $cot->forceFill(['estado' => 'borrador', 'aprobado_por' => $user->id])->save();
-        $this->auditoria->registrar('cotizacion.aprobar', $cot, null, ['motivos' => $cot->aprobacion_motivos], $comentario);
+        return DB::transaction(function () use ($cot, $user, $comentario) {
+            // Bloquea la fila: una edición simultánea no puede colarse entre la revisión y la aprobación.
+            $cot = Cotizacion::whereKey($cot->id)->lockForUpdate()->firstOrFail();
+            if ($cot->estado !== 'por_aprobar') {
+                throw ValidationException::withMessages(['cotizacion' => 'Esta cotización no tiene aprobaciones pendientes.']);
+            }
+            if ((int) $cot->creado_por === $user->id || (int) $cot->editado_por === $user->id) {
+                throw ValidationException::withMessages(['cotizacion' => 'Nadie aprueba una cotización que creó o editó: debe aprobarla otra persona.']);
+            }
+            app(\App\Modules\Comercial\Descuentos::class)->exigirAprobador($user, $cot->nivel_descuento_pct !== null ? (string) $cot->nivel_descuento_pct : null, 'cotizacion');
+            $cot->forceFill(['estado' => 'borrador', 'aprobado_por' => $user->id])->save();
+            $this->auditoria->registrar('cotizacion.aprobar', $cot, null, ['motivos' => $cot->aprobacion_motivos], $comentario);
 
-        return $cot;
+            return $cot;
+        });
     }
 
     public function enviar(Cotizacion $cot, User $user): Cotizacion

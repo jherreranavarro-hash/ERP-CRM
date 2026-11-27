@@ -114,7 +114,7 @@ class WhatsappController extends Controller
     public function estado(Request $request, Conversacion $conversacion)
     {
         $this->autorizar($request, $conversacion);
-        $d = $request->validate(['estado' => ['nullable', 'in:abierta,cerrada'], 'asignado_a' => ['nullable', 'integer']]);
+        $d = $request->validate(['estado' => ['nullable', 'in:abierta,cerrada'], 'asignado_a' => ['nullable', 'integer', \Illuminate\Validation\Rule::exists('usuario_empresa', 'user_id')->where('empresa_id', app(\App\Modules\Core\Tenancy\Tenancy::class)->id())->where('activo', true)]]);
         if ($request->has('asignado_a')) {
             $nuevo = $d['asignado_a'] ?? null;
             abort_unless($nuevo === $request->user()->id || $this->todas($request), 403);

@@ -155,7 +155,7 @@ class PersonalController extends Controller
             'local_id' => ['nullable', 'integer', 'exists:locales,id'],
             'centro_costo_id' => ['nullable', 'integer', 'exists:centros_costo,id'],
             'turno_id' => ['nullable', 'integer', 'exists:turnos,id'],
-            'user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'user_id' => ['nullable', 'integer', \Illuminate\Validation\Rule::exists('usuario_empresa', 'user_id')->where('empresa_id', app(\App\Modules\Core\Tenancy\Tenancy::class)->id())],
             'cargo' => ['required', 'string', 'max:80'],
             'fecha_ingreso' => ['required', 'date'],
             'anios_previos' => ['required', 'integer', 'min:0', 'max:50'],

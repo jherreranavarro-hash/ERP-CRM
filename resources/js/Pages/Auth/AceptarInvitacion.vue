@@ -3,13 +3,19 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import GuestLayout from '@/Layouts/GuestLayout.vue';
 import Campo from '@/Components/Campo.vue';
 
-const props = defineProps<{ token: string; vigente: boolean; email: string | null; nombre: string | null; empresa: string | null }>();
+const props = defineProps<{ token: string; vigente: boolean; email: string | null; nombre: string | null; empresa: string | null; cuentaExistente: boolean }>();
 const form = useForm({ nombre: props.nombre ?? '', password: '', password_confirmation: '' });
 </script>
 
 <template>
     <Head title="Activar cuenta" />
-    <GuestLayout v-if="vigente" titulo="Activa tu cuenta" :bajada="`Te invitaron a ${empresa}. Crea tu contraseña para ${email}.`">
+    <GuestLayout v-if="vigente && cuentaExistente" titulo="Únete a la empresa" :bajada="`Te invitaron a ${empresa}. Ya tienes una cuenta con ${email}: acepta y luego ingresa con tu contraseña y tu verificación en dos pasos de siempre.`">
+        <form class="space-y-5" @submit.prevent="form.post(`/invitacion/${token}`)">
+            <p v-if="(form.errors as Record<string, string>).email" class="error">{{ (form.errors as Record<string, string>).email }}</p>
+            <button type="submit" class="btn btn-primario w-full" :disabled="form.processing">Aceptar invitación</button>
+        </form>
+    </GuestLayout>
+    <GuestLayout v-else-if="vigente" titulo="Activa tu cuenta" :bajada="`Te invitaron a ${empresa}. Crea tu contraseña para ${email}.`">
         <form class="space-y-5" @submit.prevent="form.post(`/invitacion/${token}`, { onFinish: () => form.reset('password', 'password_confirmation') })">
             <Campo etiqueta="Tu nombre" id="nombre" :error="form.errors.nombre">
                 <input id="nombre" v-model="form.nombre" class="campo h-12" autocomplete="name" required />

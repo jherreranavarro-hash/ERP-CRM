@@ -15,6 +15,16 @@ class AuditoriaController extends Controller
     {
         $q = Trazabilidad::query()->with('user:id,name,email')->orderByDesc('id');
 
+        // Los eventos globales (sin empresa: inicios de sesión, cambios de usuarios o de
+        // configuración global) los ve completos solo un SuperAdmin. El resto ve solo los
+        // de personas de su empresa, para no exponer a usuarios de otras empresas.
+        if (! $request->user()->es_superadmin) {
+            $empresa = app(\App\Modules\Core\Tenancy\Tenancy::class)->id();
+            $q->where(fn ($w) => $w->where('empresa_id', $empresa)
+                ->orWhere(fn ($g) => $g->whereNull('empresa_id')
+                    ->whereIn('user_id', \App\Modules\Core\Models\UsuarioEmpresa::where('empresa_id', $empresa)->select('user_id'))));
+        }
+
         if ($request->filled('accion')) {
             $q->where('accion', 'like', $request->string('accion')->value().'%');
         }
