@@ -145,7 +145,7 @@ return [
                 'negocio' => ['nombre' => 'Negocio', 'acciones' => $crud, 'fase' => 1, 'ruta' => 'configuracion.empresas.index'],
                 'local' => ['nombre' => 'Local', 'acciones' => $crud, 'fase' => 1, 'ruta' => 'configuracion.locales.index'],
                 'usuarios' => ['nombre' => 'Usuarios', 'acciones' => $crud, 'fase' => 1, 'ruta' => 'configuracion.usuarios.index'],
-                'perfiles' => ['nombre' => 'Perfiles', 'acciones' => $crud, 'fase' => 1, 'ruta' => 'configuracion.roles.index'],
+                'perfiles' => ['nombre' => 'Perfiles', 'acciones' => [...$crud, 'aprobar'], 'fase' => 1, 'ruta' => 'configuracion.roles.index'],
                 'producto' => ['nombre' => 'Producto', 'acciones' => $crud, 'fase' => 2, 'ruta' => 'configuracion.productos.index'],
                 'categoria' => ['nombre' => 'Categoría', 'acciones' => $crud, 'fase' => 2, 'ruta' => 'configuracion.productos.index'],
                 'descuentos' => ['nombre' => 'Descuentos', 'acciones' => $crud, 'fase' => 2, 'ruta' => 'configuracion.descuentos.index'],
@@ -173,6 +173,7 @@ return [
             'tokens-api' => ['nombre' => 'Tokens de API', 'acciones' => ['ver', 'crear', 'eliminar'], 'fase' => 1, 'ruta' => 'configuracion.tokens.index'],
             'folios' => ['nombre' => 'Folios (CAF)', 'acciones' => ['ver', 'crear'], 'fase' => 2, 'ruta' => 'configuracion.folios.index'],
             'integraciones' => ['nombre' => 'Integraciones', 'acciones' => ['ver', 'editar'], 'fase' => 4, 'ruta' => 'configuracion.integraciones.index'],
+            'operacion' => ['nombre' => 'Operación y continuidad', 'acciones' => ['ver', 'editar'], 'fase' => 5, 'ruta' => 'configuracion.operacion.index'],
         ],
         'ventascrm' => [
             'whatsapp' => ['nombre' => 'WhatsApp', 'acciones' => ['ver', 'crear', 'editar'], 'fase' => 4, 'ruta' => 'ventas.whatsapp'],

@@ -10,7 +10,7 @@ import Chip from '@/Components/Chip.vue';
 interface Sub { clave: string; nombre: string; acciones: string[] }
 interface Mod { clave: string; nombre: string; submodulos: Sub[] }
 const props = defineProps<{
-    rol: { id: number; nombre: string; descripcion: string | null; perfil_id: number; activo: boolean; permisos: string[] } | null;
+    rol: { id: number; nombre: string; descripcion: string | null; perfil_id: number; activo: boolean; permisos: string[]; pendientes: string[] } | null;
     perfiles: { id: number; nombre: string; clave: string }[];
     matriz: Mod[];
     acciones: Record<string, string>;
@@ -23,7 +23,11 @@ const form = useForm({
     perfil_id: props.rol?.perfil_id ?? ('' as number | ''),
     activo: props.rol?.activo ?? true,
     permisos: [...(props.rol?.permisos ?? [])] as string[],
+    motivo: '',
 });
+const originales = new Set((props.rol?.permisos ?? []).filter((p) => !(props.rol?.pendientes ?? []).includes(p)));
+const pendientes = new Set(props.rol?.pendientes ?? []);
+const nuevos = computed(() => form.permisos.filter((p) => !originales.has(p)).length);
 
 const sel = computed(() => new Set(form.permisos));
 const columnas = Object.keys(props.acciones);
@@ -65,6 +69,10 @@ function guardar() {
             <Campo etiqueta="Descripción" id="descripcion" :error="form.errors.descripcion"><textarea id="descripcion" v-model="form.descripcion" class="campo" rows="3" /></Campo>
             <Interruptor v-model="form.activo" etiqueta="Rol activo" />
             <p class="num text-[14px] text-grafito">{{ form.permisos.length }} permisos marcados</p>
+            <div v-if="nuevos" class="rounded-lg border border-naranja bg-naranja/10 p-3 text-[14px]">
+                <p class="mb-2"><strong class="num">{{ nuevos }}</strong> permiso(s) nuevo(s) quedarán pendientes hasta que otra persona los apruebe. Lo que quites rige al guardar.</p>
+                <Campo etiqueta="Motivo del cambio" id="motivo" :error="form.errors.motivo"><textarea id="motivo" v-model="form.motivo" class="campo" rows="2" maxlength="500" placeholder="Ej.: apoyo en bodega durante el inventario" /></Campo>
+            </div>
             <p v-if="form.errors.permisos" class="error">{{ form.errors.permisos }}</p>
         </section>
 
@@ -95,6 +103,7 @@ function guardar() {
                                                 @change="alternar(clave(m.clave, s.clave, a))"
                                             />
                                             <Icono v-if="restringidos.includes(clave(m.clave, s.clave, a))" nombre="candado" :tamano="14" />
+                                            <span v-if="pendientes.has(clave(m.clave, s.clave, a))" class="h-2 w-2 rounded-full bg-naranja" title="Pendiente de aprobación" aria-label="Pendiente de aprobación" />
                                         </label>
                                         <span v-else class="text-linea-fuerte">·</span>
                                     </td>

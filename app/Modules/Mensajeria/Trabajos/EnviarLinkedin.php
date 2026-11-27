@@ -22,6 +22,7 @@ class EnviarLinkedin implements ShouldQueue
     public function __construct(public int $empresaId, public int $mensajeId, int $reintentos = 5)
     {
         $this->tries = max(1, $reintentos + 1);
+        $this->onQueue('correo');
     }
 
     public function backoff(): array

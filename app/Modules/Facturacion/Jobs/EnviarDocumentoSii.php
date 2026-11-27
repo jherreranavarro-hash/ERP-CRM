@@ -27,6 +27,7 @@ class EnviarDocumentoSii implements ShouldQueue
     public function __construct(public int $empresaId, public int $documentoId)
     {
         $this->afterCommit();
+        $this->onQueue('dte'); // prioridad de colas: dte > caja > correo > default > reportes
     }
 
     /** @return list<int> */
@@ -64,6 +65,12 @@ class EnviarDocumentoSii implements ShouldQueue
             }
 
             $auditoria->registrar('documento.sii_'.$r->estado, $doc, null, ['track_id' => $r->trackId]);
+
+            if ($r->estado === 'rechazado') {
+                app(\App\Modules\Operacion\Alertas::class)->emitir('dte_rechazado', "El SII rechazó el DTE {$doc->tipo_dte} folio {$doc->folio}", [
+                    'tipo_dte' => $doc->tipo_dte, 'folio' => $doc->folio, 'track_id' => $r->trackId,
+                ], "documento:{$doc->id}");
+            }
         });
     }
 }

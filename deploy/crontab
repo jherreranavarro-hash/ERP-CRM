@@ -1,0 +1,7 @@
+# crontab del usuario "erp" (crontab -u erp deploy/crontab). Hora del servidor: America/Santiago.
+# Planificador de Laravel: tareas de la app (DTE, retención, alertas, integraciones, etc.).
+* * * * * cd /var/www/erp && php artisan schedule:run >> /dev/null 2>&1
+# Respaldo diario fuera del horario de uso (mantenedor: frecuencia 24 h).
+15 1 * * * . /etc/erp/respaldo.env && /var/www/erp/deploy/respaldo.sh >> /var/log/erp/respaldo.log 2>&1
+# Prueba de restauración mensual (día 1, 04:00). Para "semanal" usa: 0 4 * * 0
+0 4 1 * * . /etc/erp/respaldo.env && /var/www/erp/deploy/probar-restauracion.sh >> /var/log/erp/respaldo.log 2>&1
