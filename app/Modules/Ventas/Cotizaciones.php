@@ -51,6 +51,7 @@ class Cotizaciones
 
         [$lineas, $totales, $descGlobal] = $this->calcularLineas($datos, $cliente, estricto: true);
         $motivos = $this->documentos->motivosDeAprobacion($lineas, $descGlobal, $formaPago, $cliente, $totales['monto_total'], null);
+        $nivel = $this->documentos->nivelDescuento($lineas, $descGlobal, $cliente);
 
         $hoy = now()->startOfDay();
         $validaHasta = ! empty($datos['valida_hasta'])
@@ -60,7 +61,7 @@ class Cotizaciones
             throw ValidationException::withMessages(['valida_hasta' => 'La vigencia no puede ser anterior a hoy.']);
         }
 
-        return DB::transaction(function () use ($cot, $datos, $user, $cliente, $contacto, $formaPago, $lineas, $totales, $descGlobal, $motivos, $hoy, $validaHasta) {
+        return DB::transaction(function () use ($cot, $datos, $user, $cliente, $contacto, $formaPago, $lineas, $totales, $descGlobal, $motivos, $nivel, $hoy, $validaHasta) {
             if (! $cot) {
                 $cot = new Cotizacion(['creado_por' => $user->id, 'numero' => $this->siguienteNumero()]);
             }
@@ -78,6 +79,7 @@ class Cotizaciones
                 'observaciones' => $datos['observaciones'] ?? null,
                 'estado' => $motivos ? 'por_aprobar' : 'borrador',
                 'aprobacion_motivos' => $motivos ?: null,
+                'nivel_descuento_pct' => $nivel,
                 'aprobado_por' => null,   // cualquier edición invalida una aprobación previa
             ] + array_diff_key($totales, ['afecto' => 1]));
             $cot->save();
@@ -98,7 +100,7 @@ class Cotizaciones
         [$lineas, $totales, $descGlobal] = $this->calcularLineas($datos, $cliente, estricto: false);
 
         return [
-            'lineas' => array_map(fn ($l) => ['precio_unitario' => $l['precio_unitario'], 'precio_lista' => $l['precio_lista'], 'monto_item' => $l['monto_item'], 'exento' => $l['exento']], $lineas),
+            'lineas' => array_map(fn ($l) => ['precio_unitario' => $l['precio_unitario'], 'precio_lista' => $l['precio_lista'], 'descuento_pct' => $l['descuento_pct'], 'monto_item' => $l['monto_item'], 'exento' => $l['exento']], $lineas),
             'totales' => $totales,
             'motivos' => $this->documentos->motivosDeAprobacion($lineas, $descGlobal, $datos['forma_pago'] ?? 'contado', $cliente, $totales['monto_total'], null),
         ];
@@ -112,6 +114,7 @@ class Cotizaciones
         if ($cot->creado_por === $user->id) {
             throw ValidationException::withMessages(['cotizacion' => 'Nadie aprueba su propia cotización: debe aprobarla otra persona.']);
         }
+        app(\App\Modules\Comercial\Descuentos::class)->exigirAprobador($user, $cot->nivel_descuento_pct !== null ? (string) $cot->nivel_descuento_pct : null, 'cotizacion');
         $cot->forceFill(['estado' => 'borrador', 'aprobado_por' => $user->id])->save();
         $this->auditoria->registrar('cotizacion.aprobar', $cot, null, ['motivos' => $cot->aprobacion_motivos], $comentario);
 

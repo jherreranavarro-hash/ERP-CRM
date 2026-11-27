@@ -257,15 +257,6 @@ class Catalogo
                     'folios.custodio' => ['etiqueta' => 'Custodio del CAF', 'tipo' => 'opcion', 'opciones' => ['proveedor_dte', 'empresa'], 'inicial' => 'proveedor_dte', 'alcances' => self::GE],
                 ],
             ],
-            'listas_precios' => [
-                'nombre' => 'Listas de precios',
-                'grupo' => 'negocio', 'sensible' => false, 'edita' => 'Comercial',
-                'piso' => 'Precio decidido en el backend.',
-                'parametros' => [
-                    'precios.regla_mayorista' => ['etiqueta' => 'Regla de la lista mayorista', 'tipo' => 'opcion', 'opciones' => ['porcentaje_sobre_meson', 'precio_propio'], 'inicial' => 'precio_propio', 'alcances' => self::GE],
-                    'precios.descuento_mayorista_pct' => ['etiqueta' => '% bajo mesón (si aplica)', 'tipo' => 'porcentaje', 'inicial' => 0, 'min' => 0, 'max' => 90, 'unidad' => '%', 'alcances' => self::GE],
-                ],
-            ],
             'credito' => [
                 'nombre' => 'Crédito y cuentas corrientes',
                 'grupo' => 'negocio', 'sensible' => false, 'edita' => 'Finanzas',

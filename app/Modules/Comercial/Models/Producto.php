@@ -24,10 +24,4 @@ class Producto extends Model
     {
         return $this->belongsTo(Categoria::class);
     }
-
-    /** Precio neto de lista según la lista del cliente (mesón o mayorista). */
-    public function precioNetoPara(string $lista): string
-    {
-        return $lista === 'mayorista' && $this->precio_mayorista !== null ? (string) $this->precio_mayorista : (string) $this->precio_neto;
-    }
 }

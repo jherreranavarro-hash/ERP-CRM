@@ -410,6 +410,37 @@ Route::middleware('auth')->group(function () {
         Route::get('grabaciones/{llamada}/audio', [\App\Http\Controllers\ContactCenter\CalidadController::class, 'audio'])->middleware($p('grabaciones', 'escuchar'))->name('grabaciones.audio');
     });
 
+    // Configuración → listas de precios, descuentos, metas y documentación de la API
+    Route::prefix('configuracion')->name('configuracion.')->group(function () {
+        $lp = \App\Http\Controllers\Configuracion\ListasPreciosController::class;
+        Route::get('listas-precios', [$lp, 'index'])->middleware('permiso:configuracion.listas-de-precios.ver')->name('listas-precios.index');
+        Route::get('listas-precios/simular', [$lp, 'simular'])->middleware('permiso:configuracion.listas-de-precios.ver')->name('listas-precios.simular');
+        Route::post('listas-precios', [$lp, 'store'])->middleware('permiso:configuracion.listas-de-precios.crear')->name('listas-precios.store');
+        Route::put('listas-precios/{lista}', [$lp, 'update'])->middleware('permiso:configuracion.listas-de-precios.editar')->name('listas-precios.update');
+        Route::delete('listas-precios/{lista}', [$lp, 'destroy'])->middleware('permiso:configuracion.listas-de-precios.eliminar')->name('listas-precios.destroy');
+        Route::post('listas-precios/{lista}/items', [$lp, 'guardarItem'])->middleware('permiso:configuracion.listas-de-precios.editar')->name('listas-precios.items.store');
+        Route::delete('listas-precios/{lista}/items/{item}', [$lp, 'quitarItem'])->middleware('permiso:configuracion.listas-de-precios.editar')->name('listas-precios.items.destroy');
+
+        $dc = \App\Http\Controllers\Configuracion\DescuentosController::class;
+        Route::get('descuentos', [$dc, 'index'])->middleware('permiso:configuracion.descuentos.ver')->name('descuentos.index');
+        Route::post('descuentos/reglas', [$dc, 'guardarRegla'])->middleware('permiso:configuracion.descuentos.crear')->name('descuentos.reglas.store');
+        Route::put('descuentos/reglas/{regla}', [$dc, 'guardarRegla'])->middleware('permiso:configuracion.descuentos.editar')->name('descuentos.reglas.update');
+        Route::delete('descuentos/reglas/{regla}', [$dc, 'eliminarRegla'])->middleware('permiso:configuracion.descuentos.eliminar')->name('descuentos.reglas.destroy');
+        Route::post('descuentos/niveles', [$dc, 'guardarNivel'])->middleware('permiso:configuracion.descuentos.editar')->name('descuentos.niveles.store');
+        Route::delete('descuentos/niveles/{nivel}', [$dc, 'eliminarNivel'])->middleware('permiso:configuracion.descuentos.eliminar')->name('descuentos.niveles.destroy');
+
+        $mc = \App\Http\Controllers\Configuracion\MetasController::class;
+        Route::get('metas', [$mc, 'index'])->middleware('permiso:configuracion.meta-admin.ver')->name('metas.index');
+        Route::post('metas', [$mc, 'store'])->middleware('permiso:configuracion.meta-admin.crear')->name('metas.store');
+        Route::post('metas/copiar', [$mc, 'copiar'])->middleware('permiso:configuracion.meta-admin.crear')->name('metas.copiar');
+        Route::put('metas/{meta}', [$mc, 'update'])->middleware('permiso:configuracion.meta-admin.editar')->name('metas.update');
+        Route::delete('metas/{meta}', [$mc, 'destroy'])->middleware('permiso:configuracion.meta-admin.eliminar')->name('metas.destroy');
+
+        $da = \App\Http\Controllers\Configuracion\DocumentacionApiController::class;
+        Route::get('documentacion-api', [$da, 'index'])->middleware('permiso:configuracion.documentacion-informe-ventas.ver')->name('documentacion-api');
+        Route::get('documentacion-api/openapi.json', [$da, 'json'])->middleware('permiso:configuracion.documentacion-informe-ventas.ver')->name('documentacion-api.json');
+    });
+
     // Configuración → telefonía
     Route::prefix('configuracion/integraciones')->name('configuracion.integraciones.')->group(function () {
         $ic = \App\Http\Controllers\Configuracion\IntegracionesController::class;
