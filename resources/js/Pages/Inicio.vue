@@ -53,8 +53,8 @@ const nombresAccion: Record<string, string> = {
                 </Kpi>
             </div>
             <div class="mt-6 rounded-boton border border-dashed border-linea-fuerte p-4 text-[15px] text-grafito">
-                Los indicadores comerciales (venta del día, margen, conversión) llegan con facturación y ventas en las fases 2 y 3.
-                Hoy tienes {{ accesos.length }} de {{ totalSub }} pantallas disponibles.
+                La venta del día, el margen y la conversión están en el <Link href="/dashboard">Dashboard CRM</Link>.
+                Tu perfil tiene acceso a {{ accesos.length }} de {{ totalSub }} pantallas.
             </div>
         </section>
 

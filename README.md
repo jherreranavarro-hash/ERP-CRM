@@ -86,3 +86,7 @@ php artisan test
 
 Los tests migran `erp_test` con el rol dueño y corren cada caso como `erp_app` dentro de una
 transacción, de modo que las políticas de RLS se prueban de verdad.
+
+## Probarlo en tu computador
+
+Con Docker Desktop instalado: `docker compose up -d --build` y abrir http://localhost:8000. Detalle en [docs/prueba-docker.md](docs/prueba-docker.md).

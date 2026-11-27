@@ -18,11 +18,9 @@ class OperacionController extends Controller
 {
     public function tiempoReal(CentroContacto $cc, Tenancy $tenancy)
     {
-        $r = config('broadcasting.connections.reverb');
-
         return Inertia::render('ContactCenter/TiempoReal', $cc->tablero() + [
             'canal' => 'contact-center.'.$tenancy->id(),
-            'conexion' => config('broadcasting.default') === 'reverb' ? ['key' => $r['key'], 'host' => $r['options']['host'], 'port' => (int) $r['options']['port'], 'tls' => $r['options']['scheme'] === 'https'] : null,
+            'conexion' => \App\Support\TiempoReal::conexion(),
         ]);
     }
 
