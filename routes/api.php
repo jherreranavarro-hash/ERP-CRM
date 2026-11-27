@@ -29,3 +29,7 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'token.api', 'throttle:api-toke
     Route::get('/dtes/{id}', [VentasController::class, 'dte'])->whereNumber('id')->middleware('scope:dtes:read');
     Route::post('/dtes', [VentasController::class, 'crear'])->middleware('scope:dtes:write');
 });
+
+// WhatsApp Business: verificación del webhook (GET) y eventos firmados con X-Hub-Signature-256 (POST).
+Route::get('/whatsapp/webhook', [\App\Http\Controllers\Api\WhatsappWebhookController::class, 'verificar'])->middleware('throttle:60,1')->name('whatsapp.verificar');
+Route::post('/whatsapp/webhook', [\App\Http\Controllers\Api\WhatsappWebhookController::class, 'recibir'])->middleware('throttle:600,1')->name('whatsapp.webhook');

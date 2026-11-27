@@ -40,6 +40,7 @@ export type PageProps<T extends Record<string, unknown> = Record<string, unknown
     auth: { user: Usuario | null; permisos: string[] };
     empresa: { actual: { id: number; nombre: string; rut: string }; disponibles: { id: number; nombre: string }[] } | null;
     menu: ModuloMenu[];
+    whatsapp: number | null;
     flash: { exito?: string | null; error?: string | null; aviso?: string | null; status?: string | null };
     errors: Record<string, string>;
 };

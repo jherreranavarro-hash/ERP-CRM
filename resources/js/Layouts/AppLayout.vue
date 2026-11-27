@@ -10,6 +10,9 @@ const user = computed(() => page.props.auth.user!);
 const menu = computed(() => page.props.menu);
 const empresa = computed(() => page.props.empresa);
 const flash = computed(() => page.props.flash);
+// Aviso flotante de WhatsApp: visible en todas las pantallas para quien atiende la bandeja.
+const whatsapp = computed(() => page.props.whatsapp);
+const enBandeja = computed(() => page.url.startsWith('/ventas/whatsapp'));
 
 const menuMovil = ref(false);
 const menuUsuario = ref(false);
@@ -143,8 +146,13 @@ watch(() => flash.value.exito, (v) => { clearTimeout(timer); if (v) timer = setT
             </main>
         </div>
 
+        <Link v-if="whatsapp !== null && whatsapp !== undefined && !enBandeja" href="/ventas/whatsapp?filtro=no_leidas" class="fixed bottom-5 right-5 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-carbon text-naranja no-underline shadow-xl hover:bg-black" :aria-label="`WhatsApp: ${whatsapp} conversaciones sin leer`" title="WhatsApp">
+            <Icono nombre="mensaje" />
+            <span v-if="whatsapp" class="num absolute -right-1 -top-1 min-w-5 rounded-full bg-naranja px-1.5 text-center text-[12px] font-bold leading-5 text-white">{{ whatsapp }}</span>
+        </Link>
+
         <Transition enter-from-class="opacity-0 translate-y-2" leave-to-class="opacity-0" enter-active-class="transition" leave-active-class="transition">
-            <div v-if="flash.exito && exitoVisible" class="fixed bottom-5 right-5 z-50 flex max-w-sm items-start gap-3 rounded-tarjeta bg-carbon px-4 py-3 text-hormigon shadow-xl" role="status">
+            <div v-if="flash.exito && exitoVisible" class="fixed right-5 z-50 flex max-w-sm items-start gap-3 rounded-tarjeta bg-carbon px-4 py-3 text-hormigon shadow-xl" :class="whatsapp !== null && whatsapp !== undefined && !enBandeja ? 'bottom-20' : 'bottom-5'" role="status">
                 <Icono nombre="check" class="mt-0.5 shrink-0 text-naranja" />
                 <p class="flex-1">{{ flash.exito }}</p>
                 <button class="text-linea-fuerte hover:text-white" aria-label="Cerrar" @click="exitoVisible = false"><Icono nombre="cerrar" :tamano="18" /></button>

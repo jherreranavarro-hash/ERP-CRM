@@ -38,6 +38,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(\App\Modules\RRHH\Integraciones\FirmaElectronica::class, \App\Modules\RRHH\Integraciones\FirmaSimulada::class);
         // Sin una central real configurada se usa la simulada; la real se conecta implementando Pbx.
         $this->app->singleton(\App\Modules\ContactCenter\Telefonia\Pbx::class, \App\Modules\ContactCenter\Telefonia\PbxSimulada::class);
+        // Integraciones de la fase 4b: simuladas hasta enlazar proveedores reales (mismo contrato).
+        $this->app->singleton(\App\Modules\Integraciones\Mapas\Mapas::class, \App\Modules\Integraciones\Mapas\MapasSimulado::class);
+        $this->app->singleton(\App\Modules\Integraciones\Whatsapp\Whatsapp::class, \App\Modules\Integraciones\Whatsapp\WhatsappSimulado::class);
+        $this->app->singleton(\App\Modules\Integraciones\Ia\AsistenteIa::class, \App\Modules\Integraciones\Ia\AsistenteSimulado::class);
         $this->app->bind(\App\Modules\RRHH\Integraciones\RelojControl::class, \App\Modules\RRHH\Integraciones\RelojCsv::class);
         // Transportistas externos: por ahora solo el simulado (integraciones reales en fase 4).
         $this->app->singleton(\App\Modules\Inventario\Transporte\Transportistas::class, fn () => new \App\Modules\Inventario\Transporte\Transportistas([new \App\Modules\Inventario\Transporte\TransportistaSimulado]));
