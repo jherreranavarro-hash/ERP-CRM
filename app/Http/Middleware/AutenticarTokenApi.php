@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Modules\Core\Models\ApiRegistro;
 use App\Modules\Core\Models\Empresa;
 use App\Modules\Core\Models\TokenAcceso;
+use App\Modules\Core\Models\UsuarioEmpresa;
 use App\Modules\Core\Tenancy\Tenancy;
 use Closure;
 use Illuminate\Http\Request;
@@ -37,6 +38,13 @@ class AutenticarTokenApi
         $empresa = Empresa::where('activo', true)->find($token->empresa_id);
         if (! $empresa) {
             return $this->error('El token no está asociado a una empresa activa.', 403);
+        }
+        // El token vale lo que vale su dueño: si lo desactivaron o salió de la empresa, deja de servir.
+        $dueno = $request->user();
+        $miembro = $dueno->es_superadmin
+            || UsuarioEmpresa::where('user_id', $dueno->id)->where('empresa_id', $empresa->id)->where('activo', true)->exists();
+        if (! $dueno->activo || $dueno->trashed() || ! $miembro) {
+            return $this->error('El usuario dueño del token ya no tiene acceso a la empresa.', 403);
         }
 
         $this->tenancy->establecer($empresa);

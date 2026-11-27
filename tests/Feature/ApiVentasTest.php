@@ -6,6 +6,8 @@ use App\Models\User;
 use App\Modules\Comercial\Models\Cliente;
 use App\Modules\Comercial\Models\Producto;
 use App\Modules\Core\Models\Empresa;
+use App\Modules\Core\Models\Rol;
+use App\Modules\Core\Models\UsuarioEmpresa;
 use App\Modules\Core\Parametros\Parametros;
 use App\Modules\Core\Tenancy\Tenancy;
 use App\Modules\Facturacion\Documentos;
@@ -79,11 +81,37 @@ class ApiVentasTest extends TestCase
     public function test_un_token_no_ve_datos_de_otra_empresa(): void
     {
         $otra = $this->empresa();
-        app(Tenancy::class)->como($otra, fn () => null);
         $hoy = now()->toDateString();
+        $url = "/api/v1/informe-ventas/resumen?desde={$hoy}&hasta={$hoy}";
 
-        $this->withToken($this->token(['informe-ventas:read'], $otra))->getJson("/api/v1/informe-ventas/resumen?desde={$hoy}&hasta={$hoy}")
+        // Sin membresía en la empresa del token: se rechaza.
+        $this->withToken($this->token(['informe-ventas:read'], $otra))->getJson($url)->assertForbidden();
+
+        // Miembro de ambas: el token solo ve la empresa a la que pertenece.
+        app(Tenancy::class)->como($otra, fn () => UsuarioEmpresa::create([
+            'user_id' => $this->u->id, 'empresa_id' => $otra->id,
+            'rol_id' => Rol::where('nombre', 'Cajera')->value('id'), 'activo' => true,
+        ]));
+        $this->app['auth']->forgetGuards();
+        $this->withToken($this->token(['informe-ventas:read'], $otra))->getJson($url)
             ->assertOk()->assertJsonPath('data.cantidad', 0);
+    }
+
+    public function test_token_de_usuario_desactivado_o_sin_membresia_se_rechaza(): void
+    {
+        $hoy = now()->toDateString();
+        $url = "/api/v1/informe-ventas/resumen?desde={$hoy}&hasta={$hoy}";
+        $t = $this->token(['informe-ventas:read']);
+        $this->withToken($t)->getJson($url)->assertOk();
+
+        UsuarioEmpresa::where('user_id', $this->u->id)->update(['activo' => false]);
+        $this->app['auth']->forgetGuards();
+        $this->withToken($t)->getJson($url)->assertForbidden();
+
+        UsuarioEmpresa::where('user_id', $this->u->id)->update(['activo' => true]);
+        $this->u->forceFill(['activo' => false])->save();
+        $this->app['auth']->forgetGuards();
+        $this->withToken($t)->getJson($url)->assertForbidden();
     }
 
     public function test_crear_y_emitir_por_api(): void

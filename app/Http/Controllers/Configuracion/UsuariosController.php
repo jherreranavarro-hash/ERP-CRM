@@ -142,6 +142,7 @@ class UsuariosController extends Controller
             'local_id' => ['nullable', Rule::exists('locales', 'id')],
             'activo' => ['required', 'boolean'],
         ]);
+        $this->exigirGestionable($request->user(), $membresia);
         $this->exigirRolAsignable($request->user(), (int) $data['rol_id']);
 
         if ($membresia->user_id === $request->user()->id && ! $data['activo']) {
@@ -160,9 +161,10 @@ class UsuariosController extends Controller
         return back()->with('exito', 'Usuario actualizado.');
     }
 
-    public function cerrarSesiones(UsuarioEmpresa $membresia)
+    public function cerrarSesiones(Request $request, UsuarioEmpresa $membresia)
     {
         abort_unless($membresia->empresa_id === $this->tenancy->id(), 404);
+        $this->exigirGestionable($request->user(), $membresia);
         app(Sesiones::class)->cerrarTodas($membresia->user);
         app(Auditoria::class)->registrar('sesion.cierre_forzado', $membresia->user);
 
@@ -187,12 +189,34 @@ class UsuariosController extends Controller
         return back()->with('exito', 'Se revocó la marca SuperAdmin y se cerraron sus sesiones.');
     }
 
-    /** Solo un SuperAdmin puede asignar roles del perfil SuperAdmin. */
+    /** Quien no es SuperAdmin no modifica a un SuperAdmin ni a alguien con más permisos que él. */
+    private function exigirGestionable(User $actor, UsuarioEmpresa $m): void
+    {
+        if ($actor->es_superadmin || $m->user_id === $actor->id) {
+            return;
+        }
+        abort_if($m->loadMissing('user')->user->es_superadmin, 403, 'Solo un SuperAdmin modifica a otro SuperAdmin.');
+        $this->exigirRolAsignable($actor, (int) $m->rol_id);
+    }
+
+    /**
+     * Solo un SuperAdmin asigna roles del perfil SuperAdmin. Y nadie que no sea
+     * SuperAdmin entrega un rol con permisos que él mismo no tiene: si no, quien
+     * administra usuarios podría crear (o invitar) una cuenta más poderosa que la suya.
+     */
     private function exigirRolAsignable(User $actor, int $rolId): void
     {
         $rol = Rol::with('perfil')->find($rolId);
-        if ($rol?->perfil?->clave === 'superadmin' && ! $actor->es_superadmin) {
+        if ($actor->es_superadmin) {
+            return;
+        }
+        if ($rol?->perfil?->clave === 'superadmin') {
             throw ValidationException::withMessages(['rol_id' => 'Solo un SuperAdmin puede asignar ese rol.']);
+        }
+        $propios = app(\App\Modules\Core\Rbac\Rbac::class)->permisosDe($actor);
+        $exceso = $rol ? $rol->permisos()->pluck('clave')->diff($propios) : collect();
+        if ($exceso->isNotEmpty()) {
+            throw ValidationException::withMessages(['rol_id' => 'Ese rol tiene permisos que tú no tienes ('.$exceso->take(3)->implode(', ').($exceso->count() > 3 ? '…' : '').'): debe asignarlo un SuperAdmin.']);
         }
     }
 }

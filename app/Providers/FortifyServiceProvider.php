@@ -24,8 +24,25 @@ class FortifyServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        // "Olvidé mi contraseña" responde lo mismo exista o no la cuenta (sin enumeración de
+        // correos). Si el correo no existe o se pidió hace poco, simplemente no llega nada.
+        $this->app->bind(\Laravel\Fortify\Contracts\FailedPasswordResetLinkRequestResponse::class, fn () => new class implements \Laravel\Fortify\Contracts\FailedPasswordResetLinkRequestResponse
+        {
+            public function toResponse($request)
+            {
+                return back()->with('status', FortifyServiceProvider::AVISO_RESTABLECER);
+            }
+        });
+        $this->app->bind(\Laravel\Fortify\Contracts\SuccessfulPasswordResetLinkRequestResponse::class, fn () => new class implements \Laravel\Fortify\Contracts\SuccessfulPasswordResetLinkRequestResponse
+        {
+            public function toResponse($request)
+            {
+                return back()->with('status', FortifyServiceProvider::AVISO_RESTABLECER);
+            }
+        });
     }
+
+    public const AVISO_RESTABLECER = 'Si el correo corresponde a una cuenta activa, te enviamos un enlace para crear una contraseña nueva.';
 
     public function boot(): void
     {
@@ -36,6 +53,12 @@ class FortifyServiceProvider extends ServiceProvider
         // Solo usuarios activos y, si es SuperAdmin, desde una IP permitida.
         Fortify::authenticateUsing(function (Request $request) {
             $user = User::where('email', Str::lower((string) $request->input('email')))->first();
+            if (! $user) {
+                // Mismo costo que con una cuenta real: el tiempo de respuesta no revela qué correos existen.
+                Hash::check((string) $request->input('password'), '$2y$12$'.str_repeat('a', 53));
+
+                return null;
+            }
 
             if ($user && $user->activo && Hash::check((string) $request->input('password'), $user->password)
                 && app(ValidarIpAdministrativa::class)->permite($user, $request)) {

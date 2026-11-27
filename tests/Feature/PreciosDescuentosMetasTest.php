@@ -172,6 +172,36 @@ class PreciosDescuentosMetasTest extends TestCase
         $docs->aprobar($doc, $this->finanzas);
     }
 
+    public function test_quien_edito_un_borrador_ajeno_no_lo_aprueba(): void
+    {
+        $c = $this->cliente('meson');
+        $cot = $this->cotizar($c, ['cantidad' => '1', 'descuento_pct' => '10']);
+        // Finanzas sube el descuento de la cotización de la ejecutiva y queda como editor.
+        $cot = app(Cotizaciones::class)->guardar(['cliente_id' => $c->id, 'forma_pago' => 'contado', 'lineas' => [['producto_id' => $this->cemento->id, 'cantidad' => '1', 'descuento_pct' => '60']]], $this->finanzas, $cot);
+        $this->assertSame('por_aprobar', $cot->estado);
+        try {
+            app(Cotizaciones::class)->aprobar($cot, $this->finanzas);
+            $this->fail('Quien editó no aprueba.');
+        } catch (ValidationException $e) {
+            $this->assertStringContainsString('editó', $e->getMessage());
+        }
+        app(Cotizaciones::class)->aprobar($cot, $this->gerente);
+        $this->assertSame('borrador', $cot->fresh()->estado);
+
+        $docs = app(Documentos::class);
+        $doc = $docs->guardar(['tipo_dte' => 33, 'cliente_id' => $c->id, 'lineas' => [['producto_id' => $this->cemento->id, 'cantidad' => '1']]], $this->ejecutiva);
+        $doc = $docs->guardar(['tipo_dte' => 33, 'cliente_id' => $c->id, 'lineas' => [['producto_id' => $this->cemento->id, 'cantidad' => '1', 'descuento_pct' => '60']]], $this->finanzas, $doc);
+        $this->assertSame('por_aprobar', $doc->estado);
+        try {
+            $docs->aprobar($doc, $this->finanzas);
+            $this->fail('Quien editó no aprueba.');
+        } catch (ValidationException $e) {
+            $this->assertStringContainsString('editó', $e->getMessage());
+        }
+        $docs->aprobar($doc, $this->gerente);
+        $this->assertNotSame('por_aprobar', $doc->fresh()->estado);
+    }
+
     public function test_sin_escalones_aprueba_cualquiera_con_permiso_y_la_pantalla_muestra_la_escalera(): void
     {
         $c = $this->cliente('meson');

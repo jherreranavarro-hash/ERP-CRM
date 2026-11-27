@@ -120,6 +120,7 @@ class ParametrosController extends Controller
     public function rechazar(Request $request, ParametroCambio $cambio)
     {
         $data = $request->validate(['comentario' => ['required', 'string', 'max:500']]);
+        $this->exigirAlcanceGlobal($request, $cambio->alcance());
         $this->parametros->rechazar($cambio, $request->user(), $data['comentario']);
 
         return back()->with('exito', 'Cambio rechazado.');

@@ -96,6 +96,7 @@ class Documentos
                 'aprobacion_motivos' => $motivos ?: null,
                 'nivel_descuento_pct' => $nivel,
                 'aprobado_por' => null,          // cualquier edición invalida una aprobación previa
+                'editado_por' => $user->id,
             ] + array_diff_key($totales, ['afecto' => 1]) + ['saldo' => 0]);
             $doc->save();
 
@@ -186,18 +187,23 @@ class Documentos
 
     public function aprobar(Documento $doc, User $user, ?string $comentario = null): Documento
     {
-        if ($doc->estado !== 'por_aprobar') {
-            throw ValidationException::withMessages(['documento' => 'Este documento no tiene aprobaciones pendientes.']);
-        }
-        if ($doc->creado_por === $user->id) {
-            throw ValidationException::withMessages(['documento' => 'Nadie aprueba su propio documento: debe aprobarlo otra persona.']);
-        }
-        $this->descuentos->exigirAprobador($user, $doc->nivel_descuento_pct !== null ? (string) $doc->nivel_descuento_pct : null);
+        return DB::transaction(function () use ($doc, $user, $comentario) {
+            // Bloquea la fila: una edición simultánea no puede colarse entre la revisión y la aprobación.
+            $doc = Documento::whereKey($doc->id)->lockForUpdate()->firstOrFail();
+            if ($doc->estado !== 'por_aprobar') {
+                throw ValidationException::withMessages(['documento' => 'Este documento no tiene aprobaciones pendientes.']);
+            }
+            // Cuatro ojos: ni quien lo creó ni quien lo editó por última vez.
+            if ((int) $doc->creado_por === $user->id || (int) $doc->editado_por === $user->id) {
+                throw ValidationException::withMessages(['documento' => 'Nadie aprueba un documento que creó o editó: debe aprobarlo otra persona.']);
+            }
+            $this->descuentos->exigirAprobador($user, $doc->nivel_descuento_pct !== null ? (string) $doc->nivel_descuento_pct : null);
 
-        $doc->forceFill(['estado' => 'borrador', 'aprobado_por' => $user->id])->save();
-        $this->auditoria->registrar('documento.aprobar', $doc, null, ['motivos' => $doc->aprobacion_motivos], $comentario);
+            $doc->forceFill(['estado' => 'borrador', 'aprobado_por' => $user->id])->save();
+            $this->auditoria->registrar('documento.aprobar', $doc, null, ['motivos' => $doc->aprobacion_motivos], $comentario);
 
-        return $doc;
+            return $doc;
+        });
     }
 
     /* ───────────────────────── Emisión ───────────────────────── */
